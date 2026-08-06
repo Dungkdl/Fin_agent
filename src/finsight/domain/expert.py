@@ -16,15 +16,15 @@ class ExpertName(StrEnum):
     FUNDAMENTAL = "fundamental"
     FUSION = "fusion"
 
-
+# Class này định nghĩa các kết luận mà một expert có thể đưa ra
 class ExpertDirection(StrEnum):
-    BULLISH = "bullish"
-    SIDEWAYS = "sideways"
-    BEARISH = "bearish"
-    NO_ACTION = "no_action"
-    UNKNOWN = "unknown"
+    BULLISH = "bullish"             # Xu hướng tăng
+    SIDEWAYS = "sideways"           # Đi ngang hoặc trung tính
+    BEARISH = "bearish"             # Xu hướng giảm
+    NO_ACTION = "no_action"         # Không nên hành động
+    UNKNOWN = "unknown"             # Chưa xác định được
 
-
+# Class này biểu diễn một bằng chứng hoặc nguồn dữ liệu được expert sử dụng
 class ExpertEvidence(BaseModel):
     source: str
     title: str | None = None
@@ -32,7 +32,7 @@ class ExpertEvidence(BaseModel):
     url: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
-
+# Class này chứa xác suất của ba lớp dự báo.
 class ExpertProbabilities(BaseModel):
     bullish: float
     sideways: float
@@ -48,24 +48,24 @@ class ExpertProbabilities(BaseModel):
     def total(self) -> float:
         return self.bullish + self.sideways + self.bearish
 
-
+# Class này định nghĩa toàn bộ thông tin mà một expert có thể trả về
 class ExpertOutput(BaseModel):
     expert_name: ExpertName
     asset_type: str
     symbol: str
-    interval: str | None = None
-    forecast_horizon: str | None = None
-    available: bool
-    predicted_class: ExpertDirection = ExpertDirection.UNKNOWN
-    confidence: float | None = None
-    uncertainty: float | None = None
-    freshness: float | None = None
-    probabilities: ExpertProbabilities | None = None
-    expected_return: float | None = None
-    expected_volatility: float | None = None
+    interval: str | None = None         # Khung dữ liệu đầu vào 
+    forecast_horizon: str | None = None     # Khung dữ liệu dự báo  
+    available: bool                            # expert có cung cấp được kết quả không
+    predicted_class: ExpertDirection = ExpertDirection.UNKNOWN  
+    confidence: float | None = None             # Mức độ tin cậy 
+    uncertainty: float | None = None            # Mức độ k chắc chắn 
+    freshness: float | None = None              # Thể hiện mức độ mới của dữ liệu 
+    probabilities: ExpertProbabilities | None = None  # Xác suất của từng kết luận 
+    expected_return: float | None = None            # Lợi suất kỳ vọng
+    expected_volatility: float | None = None        # Độ biến động kỳ vọng trong khoảng dự báo. 
     model_version: str | None = None
-    evidence: list[ExpertEvidence] = Field(default_factory=list)
-    warnings: list[str] = Field(default_factory=list)
+    evidence: list[ExpertEvidence] = Field(default_factory=list)   # Bằng chứng 
+    warnings: list[str] = Field(default_factory=list)               # Cảnh báo 
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     @field_validator("confidence", "uncertainty", "freshness")

@@ -1,4 +1,5 @@
-"""Entity nghiệp vụ dùng chung. Hiện có Candle, là định dạng candle chuẩn mà crawl và quant cùng dùng."""
+"""Entity nghiệp vụ dùng chung. Hiện có Candle, là định dạng candle chuẩn mà crawl và quant cùng dùng.
+    Định nghĩa Candle có thuộc tính gì"""
 
 from dataclasses import dataclass, field
 from datetime import datetime

@@ -1,4 +1,4 @@
-"""Enum nghiệp vụ như asset type, exchange và trading mode."""
+"""Enum nghiệp vụ như asset type, exchange và trading mode.Định nghĩ các giá trị hợp lệ """
 
 from enum import StrEnum
 
