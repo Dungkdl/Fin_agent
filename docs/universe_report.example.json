@@ -1,0 +1,16 @@
+{
+  "universe_name": "crypto_spot_usdt_v1",
+  "version": "example",
+  "quote_asset": "USDT",
+  "min_symbols": 8,
+  "max_symbols": 10,
+  "selected_symbols": ["BTCUSDT", "ETHUSDT"],
+  "decisions": [],
+  "generated_at": "2026-07-25T00:00:00+00:00",
+  "selection_config": {
+    "required_symbols": ["BTCUSDT", "ETHUSDT"],
+    "candidate_symbols": ["SOLUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "DOGEUSDT", "LINKUSDT"],
+    "min_quote_volume": 10000000
+  }
+}
+

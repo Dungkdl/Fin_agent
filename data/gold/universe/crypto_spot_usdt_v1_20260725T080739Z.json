@@ -1,0 +1,152 @@
+{
+  "decisions": [
+    {
+      "accepted": true,
+      "quote_volume": 972735962.7142724,
+      "reasons": [],
+      "source": "required",
+      "symbol": "BTCUSDT"
+    },
+    {
+      "accepted": true,
+      "quote_volume": 297618834.549964,
+      "reasons": [],
+      "source": "required",
+      "symbol": "ETHUSDT"
+    },
+    {
+      "accepted": true,
+      "quote_volume": 105216524.4135,
+      "reasons": [],
+      "source": "candidate",
+      "symbol": "SOLUSDT"
+    },
+    {
+      "accepted": true,
+      "quote_volume": 51660145.53163,
+      "reasons": [],
+      "source": "candidate",
+      "symbol": "BNBUSDT"
+    },
+    {
+      "accepted": true,
+      "quote_volume": 54629683.87336,
+      "reasons": [],
+      "source": "candidate",
+      "symbol": "XRPUSDT"
+    },
+    {
+      "accepted": false,
+      "quote_volume": 8127797.98651,
+      "reasons": [
+        "quote_volume_below_minimum"
+      ],
+      "source": "candidate",
+      "symbol": "ADAUSDT"
+    },
+    {
+      "accepted": true,
+      "quote_volume": 31064397.01023,
+      "reasons": [],
+      "source": "candidate",
+      "symbol": "DOGEUSDT"
+    },
+    {
+      "accepted": false,
+      "quote_volume": 6043150.23633,
+      "reasons": [
+        "quote_volume_below_minimum"
+      ],
+      "source": "candidate",
+      "symbol": "LINKUSDT"
+    },
+    {
+      "accepted": false,
+      "quote_volume": 2524336213.03901,
+      "reasons": [
+        "stablecoin_pair"
+      ],
+      "source": "ranked_by_quote_volume",
+      "symbol": "USDCUSDT"
+    },
+    {
+      "accepted": true,
+      "quote_volume": 172449428.32649,
+      "reasons": [],
+      "source": "ranked_by_quote_volume",
+      "symbol": "DEXEUSDT"
+    },
+    {
+      "accepted": false,
+      "quote_volume": 128352228.81693,
+      "reasons": [
+        "stablecoin_pair"
+      ],
+      "source": "ranked_by_quote_volume",
+      "symbol": "USD1USDT"
+    },
+    {
+      "accepted": true,
+      "quote_volume": 85348844.19624,
+      "reasons": [],
+      "source": "ranked_by_quote_volume",
+      "symbol": "AEROUSDT"
+    },
+    {
+      "accepted": false,
+      "quote_volume": 68456229.3841,
+      "reasons": [
+        "stablecoin_pair"
+      ],
+      "source": "ranked_by_quote_volume",
+      "symbol": "RLUSDUSDT"
+    },
+    {
+      "accepted": true,
+      "quote_volume": 60203328.61376,
+      "reasons": [],
+      "source": "ranked_by_quote_volume",
+      "symbol": "VANAUSDT"
+    },
+    {
+      "accepted": true,
+      "quote_volume": 52535812.84863,
+      "reasons": [],
+      "source": "ranked_by_quote_volume",
+      "symbol": "ZECUSDT"
+    }
+  ],
+  "generated_at": "2026-07-25T08:07:39.516793+00:00",
+  "max_symbols": 10,
+  "min_symbols": 8,
+  "quote_asset": "USDT",
+  "selected_symbols": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT",
+    "BNBUSDT",
+    "XRPUSDT",
+    "DOGEUSDT",
+    "DEXEUSDT",
+    "AEROUSDT",
+    "VANAUSDT",
+    "ZECUSDT"
+  ],
+  "selection_config": {
+    "candidate_symbols": [
+      "SOLUSDT",
+      "BNBUSDT",
+      "XRPUSDT",
+      "ADAUSDT",
+      "DOGEUSDT",
+      "LINKUSDT"
+    ],
+    "min_quote_volume": 10000000.0,
+    "required_symbols": [
+      "BTCUSDT",
+      "ETHUSDT"
+    ]
+  },
+  "universe_name": "crypto_spot_usdt_v1",
+  "version": "20260725T080739Z"
+}

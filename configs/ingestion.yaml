@@ -1,0 +1,11 @@
+provider: binance
+market_type: spot
+quote_asset: USDT
+paths:
+  bronze_klines: data/bronze/binance/spot/klines
+  silver_candles: data/silver/candles
+rest:
+  kline_limit: 1000
+bulk_download:
+  timeout_seconds: 30
+  checksum: sha256

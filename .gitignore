@@ -1,0 +1,16 @@
+﻿__pycache__/
+*.py[cod]
+.pytest_cache/
+pytest-cache-files-*/
+.ruff_cache/
+.mypy_cache/
+.venv/
+.env
+
+# Large/generated data and model artifacts
+data/bronze/
+data/silver/
+data/gold/quant_features/
+data/gold/training_samples/
+data/gold/backtests/
+artifacts/models/
