@@ -22,19 +22,20 @@ class DownloadResult:
 
 
 class ChecksumVerifier:
+    # Tính mã hash của 1 file 
     def sha256_file(self, path: Path) -> str:
         digest = hashlib.sha256()
         with path.open("rb") as file:
             for chunk in iter(lambda: file.read(1024 * 1024), b""):
                 digest.update(chunk)
         return digest.hexdigest()
-
+    # Đọc mã hash từ file check_sum 
     def parse_checksum_text(self, text: str) -> str:
         first_token = text.strip().split()[0]
         if len(first_token) != 64:
             raise ValueError("Checksum file does not start with a SHA-256 digest")
         return first_token.lower()
-
+    # So sánh hash thực tế của file với hash Binance cung cấp
     def verify(self, path: Path, checksum_text: str) -> bool:
         return self.sha256_file(path) == self.parse_checksum_text(checksum_text)
 

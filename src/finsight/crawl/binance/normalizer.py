@@ -3,7 +3,7 @@
 from collections.abc import Sequence
 from typing import Any
 
-from finsight.domain.entities import Candle
+from finsight.domain.data_models import Candle
 from finsight.crawl.binance.timestamp_parser import parse_binance_timestamp
 
 

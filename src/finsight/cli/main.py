@@ -5,8 +5,8 @@ from typing import Annotated
 
 import typer
 
-from finsight.cli.market import app as market_app
-from finsight.cli.universe import app as universe_app
+from finsight.cli.market_commands import app as market_app
+from finsight.cli.universe_commands import app as universe_app
 
 app = typer.Typer(help="FinSight Agent command-line tools.")
 app.add_typer(universe_app, name="universe")

@@ -2,7 +2,7 @@ from datetime import date
 
 import pytest
 
-from finsight.crawl.backfill_plan import BackfillRequest, HistoricalBackfillPlanner
+from finsight.crawl.backfill_planner import BackfillRequest, HistoricalBackfillPlanner
 from finsight.config.crawl_constants import BackfillMode
 
 

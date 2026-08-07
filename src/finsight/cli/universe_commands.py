@@ -5,8 +5,8 @@ from typing import Annotated
 import typer
 
 from finsight.config.settings import get_settings
-from finsight.crawl.universe_builder import UniverseBuilder
-from finsight.crawl.universe_report import UniverseReportWriter
+from finsight.crawl.coin_selector import UniverseBuilder
+from finsight.crawl.universe_exporter import UniverseReportWriter
 from finsight.crawl.binance.rest_client import BinanceRestClient
 
 app = typer.Typer(help="Universe management commands.")

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from finsight.crawl.downloader import parse_checksum_text, safe_extract_zip, verify_sha256
+from finsight.crawl.zip_downloader import parse_checksum_text, safe_extract_zip, verify_sha256
 
 
 @contextmanager

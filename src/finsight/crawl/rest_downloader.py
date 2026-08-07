@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Protocol
 
-from finsight.domain.entities import Candle
+from finsight.domain.data_models import Candle
 from finsight.config.crawl_config import RestBackfillConfig
 from finsight.config.crawl_constants import IngestionSource
 from finsight.crawl.binance.normalizer import parse_rest_kline

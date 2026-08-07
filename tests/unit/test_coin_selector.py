@@ -1,6 +1,6 @@
 import asyncio
 
-from finsight.crawl.universe_builder import UniverseBuilder
+from finsight.crawl.coin_selector import UniverseBuilder
 
 
 class FakeProvider:

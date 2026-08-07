@@ -1,4 +1,4 @@
-"""Lập kế hoạch tải dữ liệu lịch sử. File này sinh danh sách monthly ZIP cần tải nhưng không download."""
+"""Lập kế hoạch tải dữ liệu lịch sử. File này sinh danh sách monthly ZIP cần tải từ CLI truyền vào  nhưng không download."""
 
 from dataclasses import dataclass
 from datetime import date
@@ -10,7 +10,7 @@ from finsight.crawl.binance.public_data_client import (
     BinancePublicDataFile,
 )
 
-
+# Định nghĩa các thuộc tính ban đầu từ CLI 
 @dataclass(frozen=True)
 class BackfillRequest:
     symbols: tuple[str, ...]
@@ -44,10 +44,21 @@ class BackfillRequest:
         )
 
 
+from datetime import datetime
+
+@dataclass(frozen=True)
+class RestRequest:
+    symbol: str
+    interval: str
+    start: datetime
+    end: datetime
+
+
 @dataclass(frozen=True)
 class BackfillPlan:
     request: BackfillRequest
     monthly_files: tuple[BinancePublicDataFile, ...]
+    rest_requests: tuple[RestRequest, ...] = tuple()
 
     @property
     def urls(self) -> tuple[str, ...]:
@@ -60,13 +71,35 @@ class HistoricalBackfillPlanner:
 
     def plan(self, request: BackfillRequest) -> BackfillPlan:
         monthly_files: list[BinancePublicDataFile] = []
-        if request.mode in {BackfillMode.MONTHLY_ZIP, BackfillMode.HYBRID}:
-            for symbol in request.symbols:
-                for interval in request.intervals:
+        rest_requests: list[RestRequest] = []
+        
+        # Tạo datetime với giờ mặc định cho start và end
+        start_dt = datetime.combine(request.start, datetime.min.time())
+        # End datetime set to end of the day
+        end_dt = datetime.combine(request.end, datetime.max.time())
+
+        for symbol in request.symbols:
+            for interval in request.intervals:
+                if request.mode in {BackfillMode.MONTHLY_ZIP, BackfillMode.HYBRID}:
                     monthly_files.extend(self._monthly_files(symbol, interval, request.start, request.end))
+                
+                # Để đơn giản trong Giai đoạn 1, nếu mode là hybrid hoặc rest,
+                # ta cứ fetch REST từ start đến end. Quá trình deduplicate của SilverStorage 
+                # sẽ tự động gộp và loại bỏ các nến trùng. (Tránh code quá phức tạp tính ngày lệch).
+                if request.mode in {BackfillMode.REST, BackfillMode.HYBRID}:
+                    rest_requests.append(RestRequest(
+                        symbol=symbol,
+                        interval=interval,
+                        start=start_dt,
+                        end=end_dt,
+                    ))
 
-        return BackfillPlan(request=request, monthly_files=tuple(monthly_files))
-
+        return BackfillPlan(
+            request=request, 
+            monthly_files=tuple(monthly_files),
+            rest_requests=tuple(rest_requests),
+        )
+# Tạo ra danh sách các tháng - năm từ start_time  - end_time 
     def _monthly_files(
         self,
         symbol: str,
@@ -89,14 +122,14 @@ class HistoricalBackfillPlanner:
             else:
                 current_month += 1
 
-
+# Chuyển CLI ban đầu về đúng định dạng 
 def parse_iso_date(value: str, name: str) -> date:
     try:
         return date.fromisoformat(value)
     except ValueError as exc:
         raise ValueError(f"{name} must use YYYY-MM-DD format") from exc
 
-
+# Normalize về đúng định dạng của symbols 
 def normalize_csv_symbols(value: str) -> tuple[str, ...]:
     return tuple(item.strip().upper() for item in value.split(",") if item.strip())
 

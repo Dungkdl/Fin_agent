@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 
-from finsight.domain.entities import Candle
-from finsight.crawl.validator import CandleValidator
+from finsight.domain.data_models import Candle
+from finsight.crawl.candle_validator import CandleValidator
 
 
 def make_candle(offset_minutes: int, **overrides) -> Candle:

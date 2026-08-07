@@ -6,7 +6,7 @@ from typing import Any
 
 import pandas as pd
 
-from finsight.domain.entities import Candle
+from finsight.domain.data_models import Candle
 from finsight.config.crawl_config import StorageConfig
 from finsight.config.crawl_constants import (
     BRONZE_DOWNLOAD_METADATA_FILENAME,

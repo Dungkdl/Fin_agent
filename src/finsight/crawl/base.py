@@ -3,7 +3,8 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-
+# File này định nghĩa một interface chung cho market data provider. 
+# Nó quy định rằng bất kỳ provider nào muốn được hệ thống sử dụng đều phải có các hàm ping, server_time, exchange_info và ticker_24hr.
 class MarketDataProvider(ABC):
     @abstractmethod
     async def ping(self) -> bool:

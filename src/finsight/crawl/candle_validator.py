@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from datetime import timedelta
 
-from finsight.domain.entities import Candle
+from finsight.domain.data_models import Candle
 
 
 INTERVAL_DELTAS = {
@@ -92,6 +92,14 @@ class CandleValidator:
                 duplicates += 1
             seen.add(key)
         return duplicates
+
+    def deduplicate_candles(self, candles: list[Candle]) -> list[Candle]:
+        """Loại bỏ các nến trùng lặp, giữ lại nến xuất hiện sau cùng."""
+        seen: dict[tuple[str, str, object], Candle] = {}
+        for candle in candles:
+            key = (candle.symbol, candle.interval, candle.open_time)
+            seen[key] = candle
+        return list(seen.values())
 
     def count_missing_candles(self, candles: list[Candle], interval: str) -> int:
         if len(candles) < 2:

@@ -1,9 +1,9 @@
 import asyncio
 from pathlib import Path
 
-from finsight.crawl.backfill_plan import BackfillRequest
-from finsight.crawl.downloader import DownloadResult
-from finsight.crawl.service import HistoricalIngestionService
+from finsight.crawl.backfill_planner import BackfillRequest
+from finsight.crawl.zip_downloader import DownloadResult
+from finsight.crawl.crawl_orchestrator import HistoricalIngestionService
 
 
 class FakeDownloader:

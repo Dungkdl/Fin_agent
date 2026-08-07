@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-from finsight.crawl.universe_builder import UniverseBuildResult
+from finsight.crawl.coin_selector import UniverseBuildResult
 
 
 class UniverseReportWriter:
@@ -12,7 +12,7 @@ class UniverseReportWriter:
 
     def write(self, result: UniverseBuildResult) -> Path:
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        path = self.output_dir / f"{result.universe_name}_{result.version}.json"
+        path = self.output_dir / f"{result.universe_name}.json"
         path.write_text(json.dumps(result.to_dict(), indent=2, sort_keys=True), encoding="utf-8")
         return path
 
