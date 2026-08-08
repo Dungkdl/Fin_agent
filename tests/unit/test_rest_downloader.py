@@ -1,7 +1,7 @@
 import asyncio
 from datetime import UTC, datetime
 
-from finsight.config.crawl_config import RestBackfillConfig
+from finsight.config.settings import RestBackfillConfig
 from finsight.crawl.rest_downloader import RestBackfillService
 
 

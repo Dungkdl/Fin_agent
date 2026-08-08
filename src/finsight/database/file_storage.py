@@ -7,8 +7,8 @@ from typing import Any
 import pandas as pd
 
 from finsight.domain.data_models import Candle
-from finsight.config.crawl_config import StorageConfig
-from finsight.config.crawl_constants import (
+from finsight.config.settings import StorageConfig
+from finsight.config.constants import (
     BRONZE_DOWNLOAD_METADATA_FILENAME,
     DEFAULT_PARQUET_FILENAME,
 )

@@ -6,7 +6,7 @@ from typing import Annotated
 import typer
 
 from finsight.crawl.backfill_planner import BackfillRequest
-from finsight.config.crawl_constants import BackfillMode
+from finsight.domain.enums import BackfillMode
 from finsight.crawl.crawl_orchestrator import HistoricalIngestionService
 
 app = typer.Typer(help="Market-data ingestion commands.")

@@ -58,3 +58,7 @@ LEVERAGED_TOKEN_MARKERS = (
     "5S",
 )
 
+# Constants cho tên file
+BRONZE_DOWNLOAD_METADATA_FILENAME = "download_metadata.json"
+DEFAULT_PARQUET_FILENAME = "candles.parquet"
+

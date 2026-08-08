@@ -47,7 +47,12 @@ def test_historical_ingestion_service_plans_backfill() -> None:
     assert plan.urls[0].endswith("BTCUSDT/15m/BTCUSDT-15m-2026-01.zip")
 
 
-def test_historical_ingestion_service_executes_monthly_zip_plan() -> None:
+from unittest.mock import patch
+
+@patch("finsight.crawl.crawl_orchestrator.parse_kline_csv")
+def test_historical_ingestion_service_executes_monthly_zip_plan(mock_parse_csv) -> None:
+    mock_parse_csv.return_value = []
+    
     async def run() -> None:
         request = BackfillRequest.from_cli(
             symbols="BTCUSDT",

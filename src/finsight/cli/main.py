@@ -7,10 +7,14 @@ import typer
 
 from finsight.cli.market_commands import app as market_app
 from finsight.cli.universe_commands import app as universe_app
+from finsight.cli.quant_commands import app as quant_app
 
-app = typer.Typer(help="FinSight Agent command-line tools.")
-app.add_typer(universe_app, name="universe")
-app.add_typer(market_app, name="market")
+app = typer.Typer(
+    help="FinSight Agent CLI. Provides tools for data ingestion, feature engineering, and model training."
+)
+app.add_typer(universe_app, name="universe", help="Manage Binance trading universes.")
+app.add_typer(market_app, name="market", help="Market-data ingestion and validation.")
+app.add_typer(quant_app, name="quant", help="Quant ML dataset and training commands.")
 
 
 def run_async(coro):

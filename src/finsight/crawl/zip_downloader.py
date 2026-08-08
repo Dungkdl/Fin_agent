@@ -8,7 +8,7 @@ from pathlib import Path
 import httpx
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
-from finsight.config.crawl_config import BulkDownloadConfig
+from finsight.config.settings import BulkDownloadConfig
 from finsight.crawl.binance.public_data_client import BinancePublicDataFile
 
 

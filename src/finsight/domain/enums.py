@@ -14,3 +14,16 @@ class Exchange(StrEnum):
 class TradingMode(StrEnum):
     SPOT = "spot"
 
+
+class BackfillMode(StrEnum):
+    MONTHLY_ZIP = "monthly-zip"
+    REST = "rest"
+    HYBRID = "hybrid"
+
+
+class IngestionSource(StrEnum):
+    MONTHLY_ZIP = "monthly_zip"
+    DAILY_ZIP = "daily_zip"
+    REST_BACKFILL = "rest_backfill"
+    WEBSOCKET = "websocket"
+    RECONCILIATION = "reconciliation"

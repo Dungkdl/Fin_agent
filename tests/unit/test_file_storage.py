@@ -8,7 +8,7 @@ from pathlib import Path
 import pandas as pd
 
 from finsight.domain.data_models import Candle
-from finsight.config.crawl_config import StorageConfig
+from finsight.config.settings import StorageConfig
 from finsight.database.file_storage import BronzeMetadataWriter, SilverCandleWriter
 
 

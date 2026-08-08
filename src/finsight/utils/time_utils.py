@@ -9,4 +9,3 @@ def utc_now() -> datetime:
 
 def unix_ms_to_utc(timestamp_ms: int) -> datetime:
     return datetime.fromtimestamp(timestamp_ms / 1000, tz=UTC)
-

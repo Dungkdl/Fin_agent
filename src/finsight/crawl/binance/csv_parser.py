@@ -5,7 +5,7 @@ from pathlib import Path
 
 from finsight.domain.data_models import Candle
 from finsight.crawl.binance.normalizer import parse_rest_kline
-from finsight.config.crawl_constants import IngestionSource
+from finsight.domain.enums import IngestionSource
 
 
 def parse_kline_csv(csv_path: Path, symbol: str, interval: str) -> list[Candle]:

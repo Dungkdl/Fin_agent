@@ -3,7 +3,7 @@ from datetime import date
 import pytest
 
 from finsight.crawl.backfill_planner import BackfillRequest, HistoricalBackfillPlanner
-from finsight.config.crawl_constants import BackfillMode
+from finsight.domain.enums import BackfillMode
 
 
 def test_backfill_request_from_cli_normalizes_values() -> None:

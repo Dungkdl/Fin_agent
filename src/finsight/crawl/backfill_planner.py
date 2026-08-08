@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Iterable
 
-from finsight.config.crawl_constants import BackfillMode
+from finsight.domain.enums import BackfillMode
 from finsight.crawl.binance.public_data_client import (
     BinancePublicDataClient,
     BinancePublicDataFile,
@@ -44,7 +44,7 @@ class BackfillRequest:
         )
 
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 @dataclass(frozen=True)
 class RestRequest:
@@ -73,26 +73,41 @@ class HistoricalBackfillPlanner:
         monthly_files: list[BinancePublicDataFile] = []
         rest_requests: list[RestRequest] = []
         
-        # Tạo datetime với giờ mặc định cho start và end
-        start_dt = datetime.combine(request.start, datetime.min.time())
-        # End datetime set to end of the day
-        end_dt = datetime.combine(request.end, datetime.max.time())
-
+        # Xác định "tháng hoàn chỉnh gần nhất" so với ngày hiện tại (hôm nay)
+        # Vì Binance thường chỉ có file ZIP sau khi kết thúc tháng
+        today = datetime.utcnow().date()
+        last_complete_month_date = today.replace(day=1) - timedelta(days=1)
+        
         for symbol in request.symbols:
             for interval in request.intervals:
+                # 1. Tính toán khoảng thời gian cho file ZIP
                 if request.mode in {BackfillMode.MONTHLY_ZIP, BackfillMode.HYBRID}:
-                    monthly_files.extend(self._monthly_files(symbol, interval, request.start, request.end))
+                    # Chỉ tải ZIP cho những tháng hoàn chỉnh
+                    zip_end_date = min(request.end, last_complete_month_date)
+                    if request.start <= zip_end_date:
+                        monthly_files.extend(
+                            self._monthly_files(symbol, interval, request.start, zip_end_date)
+                        )
                 
-                # Để đơn giản trong Giai đoạn 1, nếu mode là hybrid hoặc rest,
-                # ta cứ fetch REST từ start đến end. Quá trình deduplicate của SilverStorage 
-                # sẽ tự động gộp và loại bỏ các nến trùng. (Tránh code quá phức tạp tính ngày lệch).
+                # 2. Tính toán khoảng thời gian cho REST API
                 if request.mode in {BackfillMode.REST, BackfillMode.HYBRID}:
-                    rest_requests.append(RestRequest(
-                        symbol=symbol,
-                        interval=interval,
-                        start=start_dt,
-                        end=end_dt,
-                    ))
+                    if request.mode == BackfillMode.REST:
+                        # Nếu chế độ thuần REST, tải toàn bộ từ start đến end
+                        rest_start_date = request.start
+                    else:
+                        # Nếu chế độ HYBRID, chỉ lấy REST cho những ngày SAU khi file ZIP kết thúc
+                        # Ví dụ: ZIP tải hết tháng 4, thì REST sẽ tải từ 1/5 đến end
+                        rest_start_date = max(request.start, last_complete_month_date + timedelta(days=1))
+                    
+                    if rest_start_date <= request.end:
+                        rest_start_dt = datetime.combine(rest_start_date, datetime.min.time())
+                        rest_end_dt = datetime.combine(request.end, datetime.max.time())
+                        rest_requests.append(RestRequest(
+                            symbol=symbol,
+                            interval=interval,
+                            start=rest_start_dt,
+                            end=rest_end_dt,
+                        ))
 
         return BackfillPlan(
             request=request, 

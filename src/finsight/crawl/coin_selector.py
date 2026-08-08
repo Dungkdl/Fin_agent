@@ -9,7 +9,7 @@ from finsight.config.constants import (
     REQUIRED_SYMBOLS,
     STABLECOIN_ASSETS,
 )
-from finsight.config.time import utc_now
+from finsight.utils.time_utils import utc_now
 from finsight.crawl.binance.schemas import BinanceSymbolInfo, BinanceTicker24hr
 
 
