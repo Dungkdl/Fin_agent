@@ -2,13 +2,13 @@
 
 import pandas as pd
 
-from finsight.experts.quant.features.price import add_price_features
-from finsight.experts.quant.features.volatility import add_volatility_features
-from finsight.experts.quant.features.momentum import add_momentum_features
-from finsight.experts.quant.features.volume import add_volume_features
-from finsight.experts.quant.features.time_features import add_time_features
-from finsight.experts.quant.features.regime import add_regime_features
-from finsight.experts.quant.features.cross_asset import add_cross_asset_features
+from finsight.experts.quant.feature_engineering.features.price import add_price_features
+from finsight.experts.quant.feature_engineering.features.volatility import add_volatility_features
+from finsight.experts.quant.feature_engineering.features.momentum import add_momentum_features
+from finsight.experts.quant.feature_engineering.features.volume import add_volume_features
+from finsight.experts.quant.feature_engineering.features.time_features import add_time_features
+from finsight.experts.quant.feature_engineering.features.regime import add_regime_features
+from finsight.experts.quant.feature_engineering.features.cross_asset import add_cross_asset_features
 
 
 class SharedFeatureBuilder:

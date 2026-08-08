@@ -2,7 +2,7 @@
 
 FinSight Agent là một hệ thống phân tích thị trường tài chính dựa trên dữ liệu (research-first). Dự án đang được phát triển theo kiến trúc **Modular Monolith** (Đa chuyên gia), trong đó **Crypto Quant Expert v1** là chuyên gia đầu tiên được xây dựng để dự báo xu hướng giá Crypto.
 
-Dự án hiện tại đã hoàn thành **Giai đoạn 1, 2 và 3**, bao gồm: Quản lý danh mục (Universe), Tải & Tinh chế dữ liệu thô (Market Backfill), và Trích xuất Đặc trưng (Feature Engineering & Dataset Building).
+Dự án hiện tại đã hoàn thành **Giai đoạn 1, 2, 3 và 4**, bao gồm: Quản lý danh mục (Universe), Tải & Tinh chế dữ liệu thô (Market Backfill), Trích xuất Đặc trưng (Feature Engineering) và Huấn luyện Mô hình AI bằng Walk-Forward CV (Model Training).
 
 ## 1. Phạm vi dự án
 - **Thị trường:** Binance Spot (Giao ngay)
@@ -38,11 +38,11 @@ finsight-agent/
 │       ├── fundamental/     # (Dự kiến) Chuyên gia Phân tích Cơ bản
 │       ├── news/            # (Dự kiến) Chuyên gia Đọc tin tức
 │       ├── fusion/          # (Dự kiến) Chuyên gia Tổng hợp
-│       └── quant/           # Chuyên gia Phân tích Định lượng (Hoàn thành Phase 3)
-│           ├── features/    # Logic tính toán >60 chỉ báo (RSI, MACD, Volatility, Regime...)
-│           ├── labels/      # Logic tính nhãn BULLISH/BEARISH
-│           ├── weighting/   # Logic tính trọng số mẫu (Sample Weights)
-│           └── datasets/    # Orchestrator xuất file Gold Parquet
+│       └── quant/           # Chuyên gia Phân tích Định lượng (Hoàn thành Phase 4)
+│           ├── datasets/    # Orchestrator xuất file Gold Parquet
+│           ├── feature_engineering/ # Logic tính toán Features, Labels, Weights
+│           ├── models/      # Kiến trúc Base Model, LightGBM, Splitters (Chống Data Leakage)
+│           └── training/    # Pipeline huấn luyện, Optuna tuning và lưu trữ Model
 └── tests/                   # Bộ Unit Test (Pytest) đảm bảo độ bền bỉ
 ```
 
@@ -96,6 +96,14 @@ Khởi tạo dữ liệu Huấn luyện AI (Gold Layer). Hệ thống sẽ đọ
 finsight quant build-dataset --config configs/quant_1d_5d.yaml
 ```
 Đầu ra sẽ là một file `data/gold/crypto_quant_1d_5d.parquet` chứa mọi thứ Model cần để bắt đầu học.
+
+### Giai đoạn 4: Huấn luyện Mô hình & Tuning (Model Training) 🆕
+Đưa file dữ liệu `Gold` vào huấn luyện với mô hình **LightGBM**. Hệ thống tự động sử dụng **Walk-Forward Cross Validation** (kỹ thuật cuốn chiếu với Embargo gap) kết hợp với **Optuna** để tìm ra siêu tham số tốt nhất mà tuyệt đối không bị dính lỗi Rò rỉ dữ liệu (Data Leakage).
+
+```bash
+# (Sắp ra mắt lệnh CLI: finsight quant train --config configs/quant_1d_5d.yaml)
+```
+Kết quả của Phase 4 là mô hình AI hoàn chỉnh được lưu tại `artifacts/models/crypto/crypto_quant_1d_5d/v1/`.
 
 ---
 

@@ -3,10 +3,10 @@
 import pandas as pd
 import numpy as np
 
-from finsight.experts.quant.weighting.class_weight import compute_class_weight
-from finsight.experts.quant.weighting.recency_weight import compute_recency_weight
-from finsight.experts.quant.weighting.regime_weight import compute_regime_weight
-from finsight.experts.quant.weighting.quality_weight import compute_quality_weight
+from finsight.experts.quant.feature_engineering.weighting.class_weight import compute_class_weight
+from finsight.experts.quant.feature_engineering.weighting.recency_weight import compute_recency_weight
+from finsight.experts.quant.feature_engineering.weighting.regime_weight import compute_regime_weight
+from finsight.experts.quant.feature_engineering.weighting.quality_weight import compute_quality_weight
 
 
 class WeightBuilder:

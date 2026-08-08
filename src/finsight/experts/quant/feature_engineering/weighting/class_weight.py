@@ -1,4 +1,4 @@
-"""Tính toán Class weight để cân bằng dữ liệu."""
+"""Mục đích của file này là giải quyết trường hợp dataset của bạn có số lượng class không cân bằng."""
 
 import pandas as pd
 

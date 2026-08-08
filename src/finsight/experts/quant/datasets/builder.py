@@ -1,12 +1,16 @@
 """Pipeline xây dựng Dataset tổng hợp (Gold layer) cho huấn luyện AI."""
 
 import pandas as pd
+import logging
 from pathlib import Path
 
 from finsight.database.parquet_storage import SilverCandleStorage
-from finsight.experts.quant.features.builder import SharedFeatureBuilder
-from finsight.experts.quant.labels.direction import DirectionLabelBuilder
-from finsight.experts.quant.weighting.combined import WeightBuilder
+from finsight.experts.quant.feature_engineering.features.builder import SharedFeatureBuilder
+from finsight.experts.quant.feature_engineering.features.validation import validate_features
+from finsight.experts.quant.feature_engineering.labels.direction import DirectionLabelBuilder
+from finsight.experts.quant.feature_engineering.weighting.combined import WeightBuilder
+
+logger = logging.getLogger(__name__)
 
 
 class DatasetBuilder:
@@ -58,22 +62,30 @@ class DatasetBuilder:
         for sym, df in dfs.items():
             df = self.feature_builder.build_cross_features(df, context_dfs=dfs)
             df = self.label_builder.build_labels(df)
-            df = self.weight_builder.build_weights(df)
-            
-            # 4. Loại bỏ các dòng bị trượt do rolling window (đầu dataset) và future shift (cuối dataset)
-            df = df.dropna()
             dfs[sym] = df
             
-        # 5. Gom toàn bộ và lưu Parquet
-        final_df = pd.concat(dfs.values(), ignore_index=True)
+        # 5. Gom toàn bộ
+        combined_df = pd.concat(dfs.values(), ignore_index=True)
+
+        # 4. Gán trọng số
+        combined_df = self.weight_builder.build_weights(combined_df)
+            
+        # 5. Validation - Kiểm định và làm sạch features (Xóa inf, kiểm tra tỷ lệ NaN)
+        combined_df = validate_features(combined_df)
+            
+        # 6. Loại bỏ NaN
+        # Tại sao dropna? Vì các hàm rolling window (SMA, MACD, etc.) luôn sinh ra NaN ở các dòng đầu tiên.
+        # Ngoài ra, future_return của cây nến cuối cùng sẽ là NaN.
+        # Ta cần drop để model không học phải dữ liệu nhiễu.
+        combined_df.dropna(inplace=True)
         
-        if len(final_df) == 0:
+        if len(combined_df) == 0:
             print("All rows were dropped during feature/label calculation.")
             return None
             
         out_file = self.gold_root / f"{self.config.get('model_name')}.parquet"
         out_file.parent.mkdir(parents=True, exist_ok=True)
-        final_df.to_parquet(out_file, engine="pyarrow", index=False)
-        print(f"Successfully saved {len(final_df)} samples to {out_file}")
+        combined_df.to_parquet(out_file, engine="pyarrow", index=False)
+        print(f"Successfully saved {len(combined_df)} samples to {out_file}")
         
         return out_file
