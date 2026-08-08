@@ -1,92 +1,120 @@
 # FinSight Agent - Chuyên gia phân tích lượng tử Crypto
 
-FinSight Agent là một dự án phân tích thị trường tập trung vào nghiên cứu (research-first). Mã nguồn hiện tại chứa nền tảng của **Giai đoạn 0, Giai đoạn 1 và Giai đoạn 2** cho hệ thống Crypto Quant Expert v1.
+FinSight Agent là một hệ thống phân tích thị trường tài chính dựa trên dữ liệu (research-first). Dự án đang được phát triển theo kiến trúc **Modular Monolith** (Đa chuyên gia), trong đó **Crypto Quant Expert v1** là chuyên gia đầu tiên được xây dựng để dự báo xu hướng giá Crypto.
 
-## Phạm vi dự án
+Dự án hiện tại đã hoàn thành **Giai đoạn 1, 2 và 3**, bao gồm: Quản lý danh mục (Universe), Tải & Tinh chế dữ liệu thô (Market Backfill), và Trích xuất Đặc trưng (Feature Engineering & Dataset Building).
 
-- **Loại tài sản:** Tiền mã hóa (Crypto)
-- **Sàn giao dịch:** Binance
-- **Chế độ giao dịch:** Chỉ Spot (Giao ngay)
-- **Đồng định giá (Quote asset):** USDT
-- **Các cặp giao dịch bắt buộc (Required):** BTCUSDT, ETHUSDT
-- **Các cặp giao dịch tiềm năng (Candidate):** SOLUSDT, BNBUSDT, XRPUSDT, ADAUSDT, DOGEUSDT, LINKUSDT
+## 1. Phạm vi dự án
+- **Thị trường:** Binance Spot (Giao ngay)
+- **Tài sản định giá:** USDT (BTCUSDT, ETHUSDT...)
+- **Dữ liệu:** Dữ liệu nến (Klines/Candles) lịch sử từ Binance Public Data (ZIP) và Binance REST API.
+- **Tiêu chí:** Tuyệt đối không dùng dữ liệu tương lai (No future leakage) trong quá trình tính toán chỉ số.
 
-> **Lưu ý:** Dự án này không gọi bất kỳ API nào để đặt lệnh giao dịch, không yêu cầu cấp quyền giao dịch (trading permissions), và không đưa ra lời khuyên tài chính.
+> **Lưu ý:** Dự án này chuyên dùng để Research, Backtest và Evaluation mô hình AI. Không gọi API đặt lệnh thật, không đưa ra lời khuyên tài chính.
 
-## Hướng dẫn cài đặt và chạy Code
+---
 
-Dự án này sử dụng `pyproject.toml` để quản lý các gói phụ thuộc (dependencies) và đóng gói mã nguồn. Việc cài đặt qua môi trường ảo (venv) sẽ giúp bạn chạy code dễ dàng hơn, không cần phải cấu hình biến môi trường `PYTHONPATH` thủ công nữa.
+## 2. Cấu trúc Dự án (Project Structure)
 
-### 1. Cài đặt môi trường (Venv)
+Dự án tuân theo kiến trúc Clean Architecture để dễ dàng mở rộng nhiều AI Expert khác nhau (News, Fundamental, Fusion...):
 
-Mở terminal (PowerShell) tại thư mục dự án và chạy các lệnh sau:
+```text
+finsight-agent/
+├── configs/                 # Thư mục chứa YAML config điều khiển hệ thống
+│   ├── ingestion.yaml       # Cấu hình tải dữ liệu thô
+│   └── quant_1d_5d.yaml     # "Bộ não" cấu hình Feature & Model cho AI
+├── data/
+│   ├── bronze/              # Lớp dữ liệu thô (ZIP, CSV gốc từ Binance)
+│   ├── silver/candles/      # Lớp dữ liệu tinh chế (Parquet, đã gộp và xóa trùng lặp)
+│   └── gold/                # Lớp dữ liệu vàng (Dataset đã tính Features, Labels, Weights)
+├── src/finsight/
+│   ├── cli/                 # Chứa các lệnh Terminal (universe, market, quant)
+│   ├── config/              # Khởi tạo Settings, Logging, Constants
+│   ├── crawl/               # Logic tải dữ liệu từ Binance (ZIP & REST)
+│   ├── database/            # Logic kết nối file Storage (Parquet Storage)
+│   ├── domain/              # Các Data Models và Enums cốt lõi
+│   ├── utils/               # Tiện ích thời gian (timezone-aware)
+│   └── experts/             # ✨ Nơi trú ngụ của các Chuyên gia AI
+│       ├── fundamental/     # (Dự kiến) Chuyên gia Phân tích Cơ bản
+│       ├── news/            # (Dự kiến) Chuyên gia Đọc tin tức
+│       ├── fusion/          # (Dự kiến) Chuyên gia Tổng hợp
+│       └── quant/           # Chuyên gia Phân tích Định lượng (Hoàn thành Phase 3)
+│           ├── features/    # Logic tính toán >60 chỉ báo (RSI, MACD, Volatility, Regime...)
+│           ├── labels/      # Logic tính nhãn BULLISH/BEARISH
+│           ├── weighting/   # Logic tính trọng số mẫu (Sample Weights)
+│           └── datasets/    # Orchestrator xuất file Gold Parquet
+└── tests/                   # Bộ Unit Test (Pytest) đảm bảo độ bền bỉ
+```
+
+---
+
+## 3. Hướng dẫn Cài đặt Môi trường
+
+Dự án dùng `pyproject.toml`. Việc dùng môi trường ảo (`.venv`) là bắt buộc để tránh xung đột thư viện.
 
 ```powershell
-# Tạo môi trường ảo có tên là .venv
+# 1. Tạo môi trường ảo
 python -m venv .venv
 
-# Kích hoạt môi trường ảo
+# 2. Kích hoạt môi trường ảo (PowerShell)
 .\.venv\Scripts\Activate.ps1
+# (Trên macOS/Linux dùng: source .venv/bin/activate)
 
-# Cài đặt dự án cùng các thư viện phát triển (dev dependencies) từ pyproject.toml
+# 3. Cài đặt toàn bộ dependencies (bao gồm Pytest để chạy test)
 pip install -e .[dev]
+# Lưu ý: Cài đặt gói `PyYAML` nếu hệ thống thiếu
+pip install pyyaml
 ```
 
-*(Lưu ý: Nếu bạn dùng Linux/macOS, lệnh kích hoạt sẽ là `source .venv/bin/activate`)*
+---
 
-### 2. Quản lý danh sách Coin (Universe) - Giai đoạn 1
+## 4. Các Giai đoạn Hoạt động (Quy trình sử dụng)
 
-Sau khi cài đặt, lệnh `finsight` sẽ được liên kết trực tiếp vào hệ thống của bạn.
+Sau khi cài đặt, bạn sử dụng công cụ qua câu lệnh `finsight`. Dưới đây là 3 bước cốt lõi:
 
-Chọn lọc và xây dựng danh sách các cặp coin đạt tiêu chuẩn (đủ volume, thanh khoản tốt) từ Binance:
-
-```bash
-finsight universe build --quote-asset USDT --limit 10
-```
-
-Thêm cờ `--dry-run` để chỉ xem trước kết quả trên màn hình mà không cần lưu ra file báo cáo:
+### Giai đoạn 1: Xây dựng Danh mục (Universe)
+Tự động quét API Binance để tìm các đồng Coin đạt chuẩn (Khối lượng giao dịch lớn, đang hoạt động).
 
 ```bash
 finsight universe build --quote-asset USDT --limit 10 --dry-run
 ```
 
-### 3. Tải và tinh chế dữ liệu thị trường (Market Backfill) - Giai đoạn 2
-
-Hệ thống có khả năng tải dữ liệu lịch sử cực lớn (ZIP file) kết hợp với dữ liệu cập nhật mới nhất (REST API), sau đó tự động **chuẩn hóa**, **loại bỏ trùng lặp**, **đánh giá chất lượng** và lưu vào định dạng siêu nhẹ **Silver Parquet**.
-
-Để tải dữ liệu thực tế (Ví dụ: dữ liệu 15m cho BTCUSDT trong tháng 1/2023), hãy chạy lệnh sau:
+### Giai đoạn 2: Tải và Tinh chế Dữ liệu Thô (Market Backfill)
+Sử dụng kho lưu trữ **Bronze/Silver Lake**. Tải toàn bộ nến từ file ZIP (tháng cũ) và nối mượt mà với REST API (tháng hiện tại). Dữ liệu Silver được lưu ở định dạng `Parquet` siêu tối ưu.
 
 ```bash
-finsight market backfill --symbols BTCUSDT --intervals 15m --start 2023-01-01 --end 2023-01-31 --mode hybrid --no-dry-run
+# Tải dữ liệu 3 tháng đầu năm 2023 cho BTC và ETH, khung 15 phút
+finsight market backfill --symbols BTCUSDT,ETHUSDT --intervals 15m --start 2023-01-01 --end 2023-03-31 --mode hybrid --no-dry-run
 ```
+*(Cơ chế thông minh: Chạy lại lệnh này nhiều lần sẽ không bị tải lại file ZIP cũ, và dữ liệu lưu xuống Parquet sẽ tự động Upsert chứ không phình to ổ cứng).*
 
-**Các chế độ chạy (`--mode`):**
-- `monthly-zip`: Chỉ tải file nén lịch sử theo tháng của Binance.
-- `rest`: Cập nhật dữ liệu mới nhất trực tiếp qua API (giới hạn số lượng nến).
-- `hybrid` (Khuyên dùng): Tải cả ZIP và REST, sau đó tự động nối lại thành một chuỗi thời gian hoàn chỉnh không đứt gãy.
+### Giai đoạn 3: Feature Engineering & Dataset Builder 🆕
+Khởi tạo dữ liệu Huấn luyện AI (Gold Layer). Hệ thống sẽ đọc file `quant_1d_5d.yaml`, tính toán hơn 60 đặc trưng toán học phức tạp (Momentum, Volatility, Time Cyclical, Market Regime, Cross-asset context BTC/ETH), đánh nhãn và gán trọng số thông minh.
 
-**Kiến trúc lưu trữ Data Lake:**
-👉 **Lớp Bronze (Dữ liệu thô):** `data/bronze/binance/spot/klines/` (Nơi chứa các file `.zip` và `.csv` gốc).
-👉 **Lớp Silver (Dữ liệu tinh chế):** `data/silver/candles/` (Nơi chứa dữ liệu Parquet đã được loại bỏ nến trùng, sẵn sàng cho Machine Learning, được phân mảnh theo cấu trúc `exchange/symbol/interval/year/month`).
+```bash
+# Biến đổi nến thô thành tập dữ liệu huấn luyện (Training Dataset)
+finsight quant build-dataset --config configs/quant_1d_5d.yaml
+```
+Đầu ra sẽ là một file `data/gold/crypto_quant_1d_5d.parquet` chứa mọi thứ Model cần để bắt đầu học.
 
-> [!WARNING]
-> **Lỗi UnicodeEncodeError trên PowerShell (Windows)**
-> Nếu đường dẫn thư mục dự án của bạn có chứa tiếng Việt có dấu (ví dụ: `D:\Tự học\AI\...`), terminal PowerShell có thể bị crash khi cố in đường dẫn file ra màn hình. Mặc dù dữ liệu vẫn được tải thành công, nhưng để tránh bị văng lỗi đỏ, bạn hãy chạy lệnh sau để ép PowerShell dùng UTF-8 trước khi gọi `finsight`:
-> ```powershell
-> $env:PYTHONIOENCODING="utf-8"
-> ```
+---
 
-## Chạy bộ kiểm thử (Tests)
+## 5. Khắc phục Sự cố (Troubleshooting)
 
-Chỉ cần gọi lệnh sau để chạy toàn bộ Unit Tests kiểm tra độ bền bỉ của hệ thống:
+1. **Lỗi `Cannot find module` trong VS Code:**
+   - Bấm vào góc phải dưới màn hình VS Code (chỗ chọn Python version).
+   - Chọn `Select Interpreter` -> Chỉ đường dẫn tới `.\.venv\Scripts\python.exe`.
 
+2. **Lỗi `UnicodeEncodeError` trên PowerShell (Windows):**
+   - Xảy ra khi đường dẫn thư mục chứa tiếng Việt (vd: `D:\Tự học\AI\...`).
+   - Chạy lệnh này trước khi gõ các lệnh `finsight`:
+     ```powershell
+     $env:PYTHONIOENCODING="utf-8"
+     ```
+
+## 6. Chạy Kiểm thử (Tests)
+Chạy toàn bộ kịch bản kiểm định chất lượng:
 ```bash
 pytest
 ```
-
-## Cấu trúc Mã nguồn
-
-- Xem chi tiết bố cục thư mục dựa theo tài liệu thiết kế tại: `docs/code_structure.md`
-- Xem giải thích chi tiết chức năng của từng file và luồng phụ thuộc tại: `docs/quant_expert_file_map.md`
-- Hướng dẫn cách đọc hiểu code: `docs/how_to_read_quant_expert_code.md`
-- Tài liệu về Kiến trúc đa chuyên gia (Multi-expert architecture): `docs/multi_expert_architecture.md`
+*(Hiện tại hệ thống đã pass toàn bộ 22 bài Test).*
