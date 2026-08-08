@@ -98,7 +98,13 @@ finsight quant build-dataset --config configs/quant_1d_5d.yaml
 Đầu ra sẽ là một file `data/gold/crypto_quant_1d_5d.parquet` chứa mọi thứ Model cần để bắt đầu học.
 
 ### Giai đoạn 4: Huấn luyện Mô hình & Tuning (Model Training) 🆕
-Đưa file dữ liệu `Gold` vào huấn luyện với mô hình **LightGBM**. Hệ thống tự động sử dụng **Walk-Forward Cross Validation** (kỹ thuật cuốn chiếu với Embargo gap) kết hợp với **Optuna** để tìm ra siêu tham số tốt nhất mà tuyệt đối không bị dính lỗi Rò rỉ dữ liệu (Data Leakage).
+Đưa file dữ liệu `Gold` vào huấn luyện. Hệ thống tự động sử dụng **Walk-Forward Cross Validation** (kỹ thuật cuốn chiếu với Embargo gap) kết hợp với **Optuna** để tìm ra siêu tham số tốt nhất mà tuyệt đối không bị dính lỗi Rò rỉ dữ liệu (Data Leakage).
+
+Đặc biệt, hệ thống sử dụng kiến trúc **Model Registry**, cho phép dễ dàng chuyển đổi linh hoạt qua cấu hình YAML giữa 4 động cơ AI mạnh mẽ:
+- **LightGBM** (Mặc định)
+- **XGBoost**
+- **CatBoost** (Đỉnh cao xử lý dữ liệu categorical)
+- **Logistic Regression** (Sử dụng làm Baseline Model)
 
 ```bash
 # (Sắp ra mắt lệnh CLI: finsight quant train --config configs/quant_1d_5d.yaml)

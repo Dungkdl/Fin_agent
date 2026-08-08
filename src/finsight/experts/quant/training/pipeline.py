@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 import warnings
 
-from finsight.experts.quant.models.lightgbm_model import LightGBMQuantModel
+from finsight.experts.quant.models.registry import get_quant_model
 from finsight.experts.quant.models.splitters.walk_forward import WalkForwardSplitter
 
 logger = logging.getLogger(__name__)
@@ -22,8 +22,8 @@ class TrainingPipeline:
         self.step_months = val_config.get("step_months", 3)
         self.final_holdout_months = val_config.get("final_holdout_months", 3)
         
-        # Sử dụng LightGBM mặc định
-        self.model = LightGBMQuantModel(config.get("model", {}))
+        # Sử dụng Factory pattern để lấy đúng model từ file YAML config
+        self.model = get_quant_model(config.get("model", {}))
         
         # Khởi tạo splitter, forecast_horizon = embargo_steps (quy đổi tương đối, giả sử 5 nến = 5)
         # Trong thực tế, embargo_steps phải đổi từ time string (e.g. "5d") sang số nến hoặc dùng date offset.
