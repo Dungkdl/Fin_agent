@@ -1,6 +1,7 @@
 """Pipeline điều phối quá trình huấn luyện và đánh giá mô hình."""
 
 import pandas as pd
+import numpy as np
 import logging
 from pathlib import Path
 import warnings
@@ -75,8 +76,39 @@ class TrainingPipeline:
         
         # 4. Đánh giá sơ bộ trên Holdout (Nếu có)
         if not df_holdout.empty:
-            preds = self.model.predict(df_holdout)
-            accuracy = (preds == df_holdout["direction_label"]).mean()
-            logger.info(f"Accuracy trên Final Holdout: {accuracy:.2%}")
-        
+            from finsight.experts.quant.training.evaluation import evaluate_classification, evaluate_slices
+            from finsight.experts.quant.training.backtest import run_spot_backtest
+            from finsight.experts.quant.training.shap_explainer import explain_model_with_shap
+            from finsight.experts.quant.training.report import save_reports
+            
+            logger.info("Chạy Evaluate Metrics trên Final Holdout...")
+            y_prob = self.model.predict_proba(df_holdout)
+            y_pred = np.argmax(y_prob, axis=1)
+            y_true = self.model._map_labels(df_holdout["direction_label"]).values
+            
+            metrics = evaluate_classification(y_true, y_pred, y_prob)
+            slices = evaluate_slices(df_holdout, y_true, y_pred, y_prob)
+            
+            logger.info(f"Accuracy (Holdout): {metrics['balanced_accuracy']:.2%} | F1: {metrics['macro_f1']:.2f}")
+            
+            logger.info("Chạy Spot-safe Backtest Simulation...")
+            # Gắn xác suất vào DF để chạy giả lập
+            df_sim = df_holdout.copy()
+            df_sim["prob_BEARISH"] = y_prob[:, 0]
+            df_sim["prob_SIDEWAYS"] = y_prob[:, 1]
+            df_sim["prob_BULLISH"] = y_prob[:, 2]
+            
+            backtest_results = run_spot_backtest(df_sim, self.config.get("backtest", {}))
+            
+            logger.info("Chạy phân tích SHAP Feature Importance...")
+            shap_imp = explain_model_with_shap(
+                self.model.model, 
+                df_holdout, 
+                self.model.features, 
+                Path(model_dir)
+            )
+            
+            logger.info("Lưu báo cáo tổng hợp (Model Card & JSON)...")
+            save_reports(model_dir, self.config, metrics, slices, backtest_results, shap_imp)
+            
         return model_dir

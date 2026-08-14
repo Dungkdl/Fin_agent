@@ -76,40 +76,34 @@ Sau khi cài đặt, bạn sử dụng công cụ qua câu lệnh `finsight`. D�
 Tự động quét API Binance để tìm các đồng Coin đạt chuẩn (Khối lượng giao dịch lớn, đang hoạt động).
 
 ```bash
-finsight universe build --quote-asset USDT --limit 10 --dry-run
+finsight universe build --quote-asset USDT --limit 10
 ```
 
 ### Giai đoạn 2: Tải và Tinh chế Dữ liệu Thô (Market Backfill)
-Sử dụng kho lưu trữ **Bronze/Silver Lake**. Tải toàn bộ nến từ file ZIP (tháng cũ) và nối mượt mà với REST API (tháng hiện tại). Dữ liệu Silver được lưu ở định dạng `Parquet` siêu tối ưu.
+Lấy dữ liệu nến (Klines) từ Binance. Ở đây ta lấy khung ngày (`1d`) trong 3 năm để đủ dữ liệu cho Model học. Dữ liệu Silver được lưu ở định dạng `Parquet` siêu tối ưu.
 
 ```bash
-# Tải dữ liệu 3 tháng đầu năm 2023 cho BTC và ETH, khung 15 phút
-finsight market backfill --symbols BTCUSDT,ETHUSDT --intervals 15m --start 2023-01-01 --end 2023-03-31 --mode hybrid --no-dry-run
+# Tải dữ liệu 3 năm cho BTC và ETH, khung 1 ngày (1d)
+finsight market backfill --symbols BTCUSDT,ETHUSDT --intervals 1d --start 2021-01-01 --end 2024-01-01 --mode rest --dry-run=False
 ```
-*(Cơ chế thông minh: Chạy lại lệnh này nhiều lần sẽ không bị tải lại file ZIP cũ, và dữ liệu lưu xuống Parquet sẽ tự động Upsert chứ không phình to ổ cứng).*
 
 ### Giai đoạn 3: Feature Engineering & Dataset Builder 🆕
-Khởi tạo dữ liệu Huấn luyện AI (Gold Layer). Hệ thống sẽ đọc file `quant_1d_5d.yaml`, tính toán hơn 60 đặc trưng toán học phức tạp (Momentum, Volatility, Time Cyclical, Market Regime, Cross-asset context BTC/ETH), đánh nhãn và gán trọng số thông minh.
+Khởi tạo dữ liệu Huấn luyện AI (Gold Layer). Hệ thống sẽ đọc file `quant_1d_5d.yaml`, tính toán hơn 60 đặc trưng toán học phức tạp (Momentum, Volatility, Time Cyclical, Market Regime, Cross-asset context), đánh nhãn và gán trọng số thông minh.
 
 ```bash
 # Biến đổi nến thô thành tập dữ liệu huấn luyện (Training Dataset)
 finsight quant build-dataset --config configs/quant_1d_5d.yaml
 ```
-Đầu ra sẽ là một file `data/gold/crypto_quant_1d_5d.parquet` chứa mọi thứ Model cần để bắt đầu học.
+Đầu ra sẽ là một file `data/gold/crypto_quant_1d_5d.parquet` chứa mọi thứ Model cần.
 
 ### Giai đoạn 4: Huấn luyện Mô hình & Tuning (Model Training) 🆕
-Đưa file dữ liệu `Gold` vào huấn luyện. Hệ thống tự động sử dụng **Walk-Forward Cross Validation** (kỹ thuật cuốn chiếu với Embargo gap) kết hợp với **Optuna** để tìm ra siêu tham số tốt nhất mà tuyệt đối không bị dính lỗi Rò rỉ dữ liệu (Data Leakage).
-
-Đặc biệt, hệ thống sử dụng kiến trúc **Model Registry**, cho phép dễ dàng chuyển đổi linh hoạt qua cấu hình YAML giữa 4 động cơ AI mạnh mẽ:
-- **LightGBM** (Mặc định)
-- **XGBoost**
-- **CatBoost** (Đỉnh cao xử lý dữ liệu categorical)
-- **Logistic Regression** (Sử dụng làm Baseline Model)
+Đưa file dữ liệu `Gold` vào huấn luyện. Hệ thống tự động sử dụng **Walk-Forward Cross Validation** kết hợp với **Optuna** để tìm siêu tham số tốt nhất. Hỗ trợ **Model Registry** (LightGBM, XGBoost, CatBoost, Logistic Regression).
 
 ```bash
-# (Sắp ra mắt lệnh CLI: finsight quant train --config configs/quant_1d_5d.yaml)
+# Bắt đầu huấn luyện AI (Auto-Tuning với Optuna + Backtest + SHAP)
+finsight quant train --config configs/quant_1d_5d.yaml
 ```
-Kết quả của Phase 4 là mô hình AI hoàn chỉnh được lưu tại `artifacts/models/crypto/crypto_quant_1d_5d/v1/`.
+Kết quả của Phase 4 là mô hình AI hoàn chỉnh, báo cáo `metrics.json` và diễn giải `shap_importance.json` được tự động lưu tại `artifacts/models/crypto/crypto_quant_1d_5d/v1/`.
 
 ---
 

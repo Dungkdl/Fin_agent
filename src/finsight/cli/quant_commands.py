@@ -42,3 +42,37 @@ def build_dataset(
     else:
         typer.secho("Failed to build dataset (maybe missing data).", fg=typer.colors.RED)
         raise typer.Exit(1)
+
+@app.command("train")
+def train_model(
+    config: Path = typer.Option(
+        ...,
+        "--config",
+        "-c",
+        help="Path to the model YAML config file (e.g., configs/quant_15m_1h.yaml).",
+    )
+) -> None:
+    """Huấn luyện mô hình Quant AI bằng Walk-Forward CV và Optuna."""
+    from finsight.experts.quant.training.pipeline import TrainingPipeline
+    from finsight.config.settings import get_settings
+    
+    if not config.exists():
+        typer.secho(f"Config file not found: {config}", fg=typer.colors.RED)
+        raise typer.Exit(1)
+        
+    with config.open("r", encoding="utf-8") as f:
+        config_dict = yaml.safe_load(f)
+        
+    typer.secho(f"Training model: {config_dict.get('model_name')}", fg=typer.colors.CYAN)
+    
+    data_path = Path("data/gold") / f"{config_dict.get('model_name')}.parquet"
+    
+    if not data_path.exists():
+        typer.secho(f"Gold dataset not found at {data_path}. Please run build-dataset first.", fg=typer.colors.RED)
+        raise typer.Exit(1)
+        
+    pipeline = TrainingPipeline(config=config_dict, data_path=data_path)
+    model_dir = pipeline.run()
+    
+    typer.secho(f"✅ Training completed! Model and reports saved at: {model_dir}", fg=typer.colors.GREEN)
+
