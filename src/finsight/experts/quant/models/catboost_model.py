@@ -28,7 +28,8 @@ class CatBoostQuantModel(BaseQuantModel):
             "iterations": self.config.get("num_boost_round", 100),
             "verbose": False,
             "early_stopping_rounds": None,
-            "thread_count": -1
+            "thread_count": -1,
+            "allow_writing_files": False
         }
 
     def _extract_features(self, df: pd.DataFrame):
@@ -86,7 +87,8 @@ class CatBoostQuantModel(BaseQuantModel):
                 "iterations": 200,
                 "early_stopping_rounds": 20,
                 "verbose": False,
-                "thread_count": -1
+                "thread_count": -1,
+                "allow_writing_files": False
             }
             
             cv_scores = []

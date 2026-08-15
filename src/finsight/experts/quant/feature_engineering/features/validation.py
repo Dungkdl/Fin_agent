@@ -16,7 +16,9 @@ def validate_features(df: pd.DataFrame) -> pd.DataFrame:
     
     # 1. Phát hiện và xử lý vô cực
     # Pandas mặc định coi inf là float, nhưng LightGBM sẽ báo lỗi nếu gặp inf.
-    df = df.replace([np.inf, -np.inf], np.nan)
+    # Chỉ replace trên các cột dạng số để tránh lỗi ValueError: The truth value of an empty array is ambiguous với chuỗi
+    numeric_cols = df.select_dtypes(include=[np.number]).columns
+    df[numeric_cols] = df[numeric_cols].replace([np.inf, -np.inf], np.nan)
     
     # 2. Log cảnh báo nếu có quá nhiều NaN (Chỉ log, không drop ở bước này vì LightGBM handle được NaN)
     nan_counts = df.isna().sum()

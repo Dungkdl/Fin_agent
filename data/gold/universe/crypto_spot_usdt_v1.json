@@ -2,63 +2,63 @@
   "decisions": [
     {
       "accepted": true,
-      "quote_volume": 592242328.731467,
+      "quote_volume": 733572426.0595661,
       "reasons": [],
       "source": "required",
       "symbol": "BTCUSDT"
     },
     {
       "accepted": true,
-      "quote_volume": 316512413.228227,
+      "quote_volume": 179087858.27921,
       "reasons": [],
       "source": "required",
       "symbol": "ETHUSDT"
     },
     {
       "accepted": true,
-      "quote_volume": 82919175.03181,
+      "quote_volume": 76501131.16711,
       "reasons": [],
       "source": "candidate",
       "symbol": "SOLUSDT"
     },
     {
       "accepted": true,
-      "quote_volume": 53161320.72151,
+      "quote_volume": 39537012.69093,
       "reasons": [],
       "source": "candidate",
       "symbol": "BNBUSDT"
     },
     {
       "accepted": true,
-      "quote_volume": 82844479.63782,
+      "quote_volume": 66970112.99028,
       "reasons": [],
       "source": "candidate",
       "symbol": "XRPUSDT"
     },
     {
       "accepted": true,
-      "quote_volume": 57850204.84853,
+      "quote_volume": 10036751.08733,
       "reasons": [],
       "source": "candidate",
       "symbol": "ADAUSDT"
     },
     {
       "accepted": true,
-      "quote_volume": 26931607.044,
+      "quote_volume": 14778290.20456,
       "reasons": [],
       "source": "candidate",
       "symbol": "DOGEUSDT"
     },
     {
       "accepted": true,
-      "quote_volume": 10267820.40511,
+      "quote_volume": 34940132.52577,
       "reasons": [],
       "source": "candidate",
       "symbol": "LINKUSDT"
     },
     {
       "accepted": false,
-      "quote_volume": 1225835307.42025,
+      "quote_volume": 1221161537.42597,
       "reasons": [
         "stablecoin_pair"
       ],
@@ -66,8 +66,15 @@
       "symbol": "USDCUSDT"
     },
     {
+      "accepted": true,
+      "quote_volume": 127086243.45387,
+      "reasons": [],
+      "source": "ranked_by_quote_volume",
+      "symbol": "ACEUSDT"
+    },
+    {
       "accepted": false,
-      "quote_volume": 95730237.58855,
+      "quote_volume": 83431962.2932,
       "reasons": [
         "stablecoin_pair"
       ],
@@ -76,20 +83,13 @@
     },
     {
       "accepted": true,
-      "quote_volume": 87072119.75498,
+      "quote_volume": 77620794.29951,
       "reasons": [],
       "source": "ranked_by_quote_volume",
-      "symbol": "ERAUSDT"
-    },
-    {
-      "accepted": true,
-      "quote_volume": 80905920.572283,
-      "reasons": [],
-      "source": "ranked_by_quote_volume",
-      "symbol": "SNDKBUSDT"
+      "symbol": "PLUMEUSDT"
     }
   ],
-  "generated_at": "2026-08-07T08:32:50.497948+00:00",
+  "generated_at": "2026-08-15T07:29:38.772496+00:00",
   "max_symbols": 10,
   "min_symbols": 8,
   "quote_asset": "USDT",
@@ -102,8 +102,8 @@
     "ADAUSDT",
     "DOGEUSDT",
     "LINKUSDT",
-    "ERAUSDT",
-    "SNDKBUSDT"
+    "ACEUSDT",
+    "PLUMEUSDT"
   ],
   "selection_config": {
     "candidate_symbols": [
@@ -121,5 +121,5 @@
     ]
   },
   "universe_name": "crypto_spot_usdt_v1",
-  "version": "20260807T083250Z"
+  "version": "20260815T072938Z"
 }

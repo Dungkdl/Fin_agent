@@ -12,6 +12,9 @@ universe:
   required_symbols:
     - BTCUSDT
     - ETHUSDT
+    - BNBUSDT
+    - SOLUSDT
+    - XRPUSDT
 data:
   history_years: 3
   source: hybrid

@@ -84,7 +84,7 @@ Lấy dữ liệu nến (Klines) từ Binance. Ở đây ta lấy khung ngày (`
 
 ```bash
 # Tải dữ liệu 3 năm cho BTC và ETH, khung 1 ngày (1d)
-finsight market backfill --symbols BTCUSDT,ETHUSDT --intervals 1d --start 2021-01-01 --end 2024-01-01 --mode rest --dry-run=False
+finsight market backfill --symbols BTCUSDT,ETHUSDT,BNBUSDT,SOLUSDT,XRPUSDT --intervals 1d --start 2021-01-01 --end 2024-01-01 --mode rest --no-dry-run
 ```
 
 ### Giai đoạn 3: Feature Engineering & Dataset Builder 🆕
@@ -94,23 +94,34 @@ Khởi tạo dữ liệu Huấn luyện AI (Gold Layer). Hệ thống sẽ đọ
 # Biến đổi nến thô thành tập dữ liệu huấn luyện (Training Dataset)
 finsight quant build-dataset --config configs/quant_1d_5d.yaml
 ```
-Đầu ra sẽ là một file `data/gold/crypto_quant_1d_5d.parquet` chứa mọi thứ Model cần.
+Đầu ra sẽ là một file `data/gold/training_samples/crypto_quant_1d_5d.parquet` chứa mọi thứ Model cần.
 
 ### Giai đoạn 4: Huấn luyện Mô hình & Tuning (Model Training) 🆕
 Đưa file dữ liệu `Gold` vào huấn luyện. Hệ thống tự động sử dụng **Walk-Forward Cross Validation** kết hợp với **Optuna** để tìm siêu tham số tốt nhất. Hỗ trợ **Model Registry** (LightGBM, XGBoost, CatBoost, Logistic Regression).
 
-Hệ thống có chế độ chạy chuyên nghiệp thông qua việc tách cấu hình:
-- Bạn có thể chạy từng Model riêng biệt:
 ```bash
-finsight quant train --config configs/quant_1d_5d_xgb.yaml
-```
+# Huấn luyện 1 mô hình bất kỳ (vd: XGBoost) từ file config gốc
+finsight quant train --config configs/quant_1d_5d.yaml --engine xgboost
 
-- **HOẶC** chạy hàng loạt (Batch Training) cả 4 Model cùng lúc để so sánh:
-```bash
-finsight quant train-all --dir configs --pattern "quant_1d_5d_*.yaml"
+# HOẶC: Chạy huấn luyện HÀNG LOẠT tất cả 4 mô hình (Khuyên dùng)
+finsight quant train-all
 ```
 
 Kết quả của Phase 4 là mô hình AI hoàn chỉnh, báo cáo `metrics.json` và diễn giải `shap_importance.json` được tự động lưu tại `artifacts/models/crypto/<model_name>/v1/`.
+
+### Giai đoạn 5: Vận hành Thực tế (Live Updates) 🆕
+Mỗi khi bạn muốn lấy dữ liệu nến mới nhất của ngày hôm nay để cập nhật cho Model, bạn không cần chạy lại từ đầu. Hệ thống Hỗ trợ **Incremental Backfill** (Tải bù thông minh):
+
+```bash
+# 1. Tải bù nến từ ngày cũ đến hôm nay (Ví dụ từ 2024-01-01 -> 2026-08-15)
+finsight market backfill --symbols BTCUSDT,ETHUSDT,BNBUSDT,SOLUSDT,XRPUSDT --intervals 1d --start 2024-01-01 --end 2026-08-15 --mode rest --no-dry-run
+
+# 2. Build lại dữ liệu (tính toán Features cho nến mới)
+finsight quant build-dataset --config configs/quant_1d_5d.yaml
+
+# 3. Train lại toàn bộ AI với trí khôn mới nhất
+finsight quant train-all
+```
 
 ---
 

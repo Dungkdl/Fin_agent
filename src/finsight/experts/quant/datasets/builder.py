@@ -75,8 +75,10 @@ class DatasetBuilder:
             
         # 6. Loại bỏ NaN
         # Tại sao dropna? Vì các hàm rolling window (SMA, MACD, etc.) luôn sinh ra NaN ở các dòng đầu tiên.
-        # Ngoài ra, future_return của cây nến cuối cùng sẽ là NaN.
-        # Ta cần drop để model không học phải dữ liệu nhiễu.
+        # Tuy nhiên các cột Metadata như source_file có thể bị NaN và làm drop mất toàn bộ dữ liệu. Ta xóa chúng đi trước.
+        meta_cols = ["source", "source_file", "quality_status", "quality_flags"]
+        combined_df.drop(columns=[c for c in meta_cols if c in combined_df.columns], inplace=True)
+        
         combined_df.dropna(inplace=True)
         
         if len(combined_df) == 0:

@@ -144,6 +144,11 @@ class XGBoostQuantModel(BaseQuantModel):
     def save(self, model_dir: str) -> None:
         path = Path(model_dir)
         path.mkdir(parents=True, exist_ok=True)
+        
+        # Workaround cho lỗi TypeError: `_estimator_type` undefined của thư viện xgboost
+        if not hasattr(self.model, "_estimator_type"):
+            self.model._estimator_type = "classifier"
+            
         self.model.save_model(path / "xgboost.json")
         pd.Series(self.features).to_json(path / "features.json", orient="records")
 
