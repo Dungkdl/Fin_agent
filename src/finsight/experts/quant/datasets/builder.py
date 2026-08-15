@@ -68,7 +68,7 @@ class DatasetBuilder:
         combined_df = pd.concat(dfs.values(), ignore_index=True)
         
         # 5.5 Enforce history_years from config
-        history_years = self.config.get("history_years", 5)
+        history_years = self.config.get("data", {}).get("history_years", 5)
         if not combined_df.empty:
             max_time = combined_df["close_time"].max()
             min_time = max_time - pd.DateOffset(years=history_years)

@@ -79,23 +79,21 @@ class TrainingPipeline:
             df_train_val = df.copy()
             df_holdout = pd.DataFrame()
             
-        # 2. Huấn luyện mô hình (Bao gồm Optuna Tuning qua CV)
-        logger.info("Bắt đầu huấn luyện mô hình với Walk-Forward CV...")
-        self.model.train(df_train_val, cv_splitter=self.splitter)
-        
-        # 3. Lưu mô hình
-        model_dir = f"artifacts/models/crypto/{self.config.get('model_name', 'default_model')}/v1"
-        logger.info(f"Lưu mô hình tại {model_dir}")
-        self.model.save(model_dir)
-        
-        # 4. Tune Threshold trên out-of-sample (Dùng 20% dữ liệu cuối của df_train_val làm validation cho threshold)
-        logger.info("Tuning Probability Threshold trên tập OOS Validation...")
-        # Tạo tập holdout nhỏ từ train_val (VD: 20% thời gian cuối hoặc tối thiểu 1 tháng)
+        # 2. Tách tập Train/Val thành Train Only (80%) và Tune (20%) để OOS Threshold Tuning
+        logger.info("Tách tập OOS Validation để dò Threshold...")
         tune_start_time = df_train_val["close_time"].max() - pd.DateOffset(months=max(1, int(self.min_train_months * 0.2)))
+        df_train_only = df_train_val[df_train_val["close_time"] < tune_start_time]
         df_tune = df_train_val[df_train_val["close_time"] >= tune_start_time]
         if df_tune.empty:
-            df_tune = df_train_val # fallback nếu data quá ngắn
-
+            df_tune = df_train_val
+            df_train_only = df_train_val
+            
+        # 3. Huấn luyện mô hình (Kèm Optuna Tuning) trên tập Train Only
+        logger.info("Bắt đầu huấn luyện mô hình với Walk-Forward CV trên tập Train Only...")
+        self.model.train(df_train_only, cv_splitter=self.splitter)
+        
+        # 4. Tune Threshold trên out-of-sample
+        logger.info("Tuning Probability Threshold trên tập OOS Validation...")
         y_prob_tune = self.model.predict_proba(df_tune)
         y_true_tune = self.model._map_labels(df_tune["direction_label"]).values
         y_true_binary = (y_true_tune == 2).astype(int)
@@ -111,10 +109,18 @@ class TrainingPipeline:
                 best_th = th
                 
         logger.info(f"Đã Tune Threshold = {best_th:.2f} (OOS F1-BULLISH: {best_f1:.2f})")
-        
         if "backtest" not in self.config:
             self.config["backtest"] = {}
         self.config["backtest"]["probability_threshold"] = float(best_th)
+        
+        # 5. Retrain Final Model trên toàn bộ Train/Val (Không chạy lại Optuna)
+        logger.info("Retraining Final Model trên toàn bộ Train/Val...")
+        self.model.train(df_train_val, cv_splitter=None)
+        
+        # 6. Lưu mô hình
+        model_dir = f"artifacts/models/crypto/{self.config.get('model_name', 'default_model')}/v1"
+        logger.info(f"Lưu mô hình tại {model_dir}")
+        self.model.save(model_dir)
         
         # 5. Đánh giá sơ bộ trên Holdout (Nếu có)
         if not df_holdout.empty:
@@ -147,7 +153,8 @@ class TrainingPipeline:
             df_sim["prob_SIDEWAYS"] = y_prob[:, 1]
             df_sim["prob_BULLISH"] = y_prob[:, 2]
             
-            backtest_results = run_spot_backtest(df_sim, self.config.get("backtest", {}))
+            bt_config = {**self.config.get("backtest", {}), "forecast_steps": self.config.get("forecast_steps", 5)}
+            backtest_results = run_spot_backtest(df_sim, bt_config)
             
             logger.info("Chạy phân tích SHAP Feature Importance...")
             shap_imp = explain_model_with_shap(
