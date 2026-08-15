@@ -161,14 +161,14 @@ def train_all_models(
         try:
             pipeline = TrainingPipeline(config=cfg, data_path=data_path)
             model_dir = pipeline.run()
-            msg = f"✅ Training success! Saved at: {model_dir}"
+            msg = f"[OK] Training success! Saved at: {model_dir}"
             typer.secho(msg, fg=typer.colors.GREEN)
             logger.info(msg)
         except Exception as e:
-            msg = f"❌ Training failed for {engine}: {e}"
+            msg = f"[FAIL] Training failed for {engine}: {e}"
             typer.secho(msg, fg=typer.colors.RED)
             logger.error(msg)
             
-    msg = f"\n🎉 All Batch Training completed!"
+    msg = f"\n[DONE] All Batch Training completed!"
     typer.secho(msg, fg=typer.colors.GREEN)
     logger.info(msg.strip())

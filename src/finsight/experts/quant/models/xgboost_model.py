@@ -73,6 +73,9 @@ class XGBoostQuantModel(BaseQuantModel):
             sample_weight=w_final,
             verbose=False
         )
+        # Verify
+        logger.info(f"[Verification] Actual XGBoost estimators requested: {self.params.get('n_estimators', 'default')}")
+        logger.info(f"[Verification] Actual XGBoost trees built (approx): {self.model.get_booster().num_boosted_rounds()}")
         
     def _tune_hyperparameters(self, df_train, y_train, w_train, cv_splitter):
         def objective(trial):
@@ -92,6 +95,7 @@ class XGBoostQuantModel(BaseQuantModel):
             }
             
             cv_scores = []
+            best_iters = []
             from finsight.experts.quant.feature_engineering.weighting.class_weight import compute_class_weight
             
             for train_idx, val_idx in cv_splitter.split(df_train):
@@ -122,7 +126,9 @@ class XGBoostQuantModel(BaseQuantModel):
                 
                 best_score = clf.best_score
                 cv_scores.append(best_score)
+                best_iters.append(clf.best_iteration)
                 
+            trial.set_user_attr("best_iteration", int(np.median(best_iters)))
             return np.mean(cv_scores)
 
         study = optuna.create_study(direction="minimize")
@@ -131,6 +137,11 @@ class XGBoostQuantModel(BaseQuantModel):
         logger.info(f"Best Optuna Params (XGBoost): {study.best_params}")
         best_params = self.params.copy()
         best_params.update(study.best_params)
+        
+        # Đồng bộ Boosting Rounds
+        best_iteration = study.best_trial.user_attrs.get("best_iteration", None)
+        if best_iteration is not None:
+            best_params["n_estimators"] = best_iteration + 1
         
         # Nếu đã tune thì lúc train final bỏ early stopping
         if "early_stopping_rounds" in best_params:

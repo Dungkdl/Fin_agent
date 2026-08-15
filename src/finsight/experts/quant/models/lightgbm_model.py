@@ -69,8 +69,9 @@ class LightGBMQuantModel(BaseQuantModel):
         self.model = lgb.train(
             self.params,
             train_data,
-            num_boost_round=self.config.get("num_boost_round", 100)
+            num_boost_round=self.params.get("num_boost_round", self.config.get("num_boost_round", 100))
         )
+        logger.info(f"[Verification] Actual LightGBM trees built: {self.model.num_trees()}")
         
     def _tune_hyperparameters(self, df_train, y_train, w_train, cv_splitter):
         def objective(trial):
@@ -89,6 +90,7 @@ class LightGBMQuantModel(BaseQuantModel):
             }
             
             cv_scores = []
+            best_iters = []
             from finsight.experts.quant.feature_engineering.weighting.class_weight import compute_class_weight
             
             for train_idx, val_idx in cv_splitter.split(df_train):
@@ -119,7 +121,9 @@ class LightGBMQuantModel(BaseQuantModel):
                 )
                 
                 cv_scores.append(model.best_score["valid_0"]["multi_logloss"])
+                best_iters.append(model.best_iteration)
                 
+            trial.set_user_attr("best_iteration", int(np.median(best_iters)))
             return np.mean(cv_scores)
 
         study = optuna.create_study(direction="minimize")
@@ -128,6 +132,12 @@ class LightGBMQuantModel(BaseQuantModel):
         logger.info(f"Best Optuna Params: {study.best_params}")
         best_params = self.params.copy()
         best_params.update(study.best_params)
+        
+        # Đồng bộ Boosting Rounds
+        best_iteration = study.best_trial.user_attrs.get("best_iteration", None)
+        if best_iteration is not None:
+            best_params["num_boost_round"] = best_iteration
+            
         return best_params
 
     def cross_val_predict(self, df_train: pd.DataFrame, cv_splitter) -> np.ndarray:
@@ -159,7 +169,7 @@ class LightGBMQuantModel(BaseQuantModel):
             model = lgb.train(
                 self.params,
                 dtrain,
-                num_boost_round=self.config.get("num_boost_round", 100)
+                num_boost_round=self.params.get("num_boost_round", self.config.get("num_boost_round", 100))
             )
             
             preds = model.predict(X_va)

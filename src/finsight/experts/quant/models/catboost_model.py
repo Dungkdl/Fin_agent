@@ -78,6 +78,7 @@ class CatBoostQuantModel(BaseQuantModel):
         
         self.model = CatBoostClassifier(**self.params)
         self.model.fit(train_pool, verbose=False)
+        logger.info(f"[Verification] Actual CatBoost trees built: {self.model.tree_count_}")
         
     def _tune_hyperparameters(self, df_train, y_train, w_train, cv_splitter):
         def objective(trial):
@@ -96,6 +97,7 @@ class CatBoostQuantModel(BaseQuantModel):
             }
             
             cv_scores = []
+            best_iters = []
             from finsight.experts.quant.feature_engineering.weighting.class_weight import compute_class_weight
             
             for train_idx, val_idx in cv_splitter.split(df_train):
@@ -124,7 +126,9 @@ class CatBoostQuantModel(BaseQuantModel):
                 # Retrieve best score
                 best_score = clf.get_best_score()["validation"]["MultiClass"]
                 cv_scores.append(best_score)
+                best_iters.append(clf.get_best_iteration())
                 
+            trial.set_user_attr("best_iteration", int(np.median(best_iters)))
             return np.mean(cv_scores)
 
         study = optuna.create_study(direction="minimize")
@@ -133,6 +137,11 @@ class CatBoostQuantModel(BaseQuantModel):
         logger.info(f"Best Optuna Params (CatBoost): {study.best_params}")
         best_params = self.params.copy()
         best_params.update(study.best_params)
+        
+        # Đồng bộ Boosting Rounds
+        best_iteration = study.best_trial.user_attrs.get("best_iteration", None)
+        if best_iteration is not None:
+            best_params["iterations"] = best_iteration
         
         if "early_stopping_rounds" in best_params:
             best_params["early_stopping_rounds"] = None

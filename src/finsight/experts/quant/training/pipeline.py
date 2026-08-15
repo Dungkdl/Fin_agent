@@ -44,13 +44,10 @@ class TrainingPipeline:
         df = pd.read_parquet(self.data_path)
         df = df.sort_values("close_time").reset_index(drop=True)
         
-        # 1. Tách Final Holdout (Tập dữ liệu tối mật, không được dùng để Tuning)
+        # 1. Tách DEV Holdout (Tập dữ liệu tối mật, không được dùng để Tuning)
         end_time = df["close_time"].max()
         holdout_start = end_time - pd.DateOffset(months=self.final_holdout_months)
         
-        # Embargo cho Holdout
-        # Chắc chắn rằng tập Holdout không bị rò rỉ label từ tập Train.
-        # Tìm nến cuối cùng của tập Train bằng cách lùi lại embargo_steps từ holdout_start
         holdout_mask = df["close_time"] >= holdout_start
         holdout_idx = df.index[holdout_mask]
         
@@ -68,48 +65,70 @@ class TrainingPipeline:
                 
             embargo_time = td * self.embargo_steps
             
-            # Tập Train phải kết thúc trước thời điểm Holdout bắt đầu trừ đi embargo_time
-            train_time_limit = holdout_start - embargo_time
+            # Tách tập Calibration (VD: 3 tháng trước DEV Holdout)
+            calibration_months = self.config.get("validation", {}).get("calibration_months", 3)
+            calibration_start = holdout_start - pd.DateOffset(months=calibration_months)
             
-            df_train_val = df[df["close_time"] < train_time_limit].copy()
+            # Embargo giữa Calibration và DEV Holdout
+            calibration_end_limit = holdout_start - embargo_time
+            calibration_mask = (df["close_time"] >= calibration_start) & (df["close_time"] < calibration_end_limit)
+            
+            # Embargo giữa Train/Optuna và Calibration
+            train_inner_limit = calibration_start - embargo_time
+            
+            df_train_inner = df[df["close_time"] < train_inner_limit].copy()
+            df_calibration = df[calibration_mask].copy()
             df_holdout = df[holdout_mask].copy()
-            logger.info(f"Tách Final Holdout: {len(df_holdout)} samples. Train/Val: {len(df_train_val)} samples.")
+            
+            # Assert Temporal Separation
+            if not df_train_inner.empty and not df_calibration.empty:
+                assert df_train_inner["close_time"].max() + embargo_time <= df_calibration["close_time"].min(), "Temporal Separation Failed between Train and Calibration!"
+            if not df_calibration.empty and not df_holdout.empty:
+                assert df_calibration["close_time"].max() + embargo_time <= df_holdout["close_time"].min(), "Temporal Separation Failed between Calibration and Holdout!"
+            
+            logger.info(f"Tách DEV Holdout: {len(df_holdout)} samples.")
+            logger.info(f"Tách Calibration: {len(df_calibration)} samples.")
+            logger.info(f"Train/Optuna: {len(df_train_inner)} samples.")
         else:
-            warnings.warn("Không đủ dữ liệu để tạo Final Holdout!")
-            df_train_val = df.copy()
+            warnings.warn("Không đủ dữ liệu để tạo DEV Holdout!")
+            df_train_inner = df.copy()
+            df_calibration = pd.DataFrame()
             df_holdout = pd.DataFrame()
             
-        # 2. Huấn luyện mô hình (Kèm Optuna Tuning) trên toàn bộ Train/Val
-        logger.info("Bắt đầu huấn luyện mô hình với Walk-Forward CV trên tập Train/Val...")
-        self.model.train(df_train_val, cv_splitter=self.splitter)
+        # 2. Huấn luyện mô hình (Kèm Optuna Tuning) trên Train/Optuna
+        logger.info("Bắt đầu huấn luyện mô hình với Walk-Forward CV trên tập Train/Optuna...")
+        self.model.train(df_train_inner, cv_splitter=self.splitter)
         
-        # 3. Lấy Out-Of-Fold probabilities từ Walk-Forward CV để dò Threshold
-        logger.info("Sinh Walk-Forward Out-Of-Fold probabilities...")
-        y_prob_oof = self.model.cross_val_predict(df_train_val, cv_splitter=self.splitter)
-        
-        # 4. Tune Threshold trên OOF probabilities
-        logger.info("Tuning Probability Threshold trên tập OOF Validation...")
-        # Lọc ra các mẫu có dự đoán (không bị NaN do nằm ngoài các Validation folds)
-        valid_mask = ~np.isnan(y_prob_oof[:, 0])
-        y_prob_tune = y_prob_oof[valid_mask]
-        
-        y_true = self.model._map_labels(df_train_val["direction_label"]).values
-        y_true_tune = y_true[valid_mask]
-        y_true_binary = (y_true_tune == 2).astype(int)
-        
-        from sklearn.metrics import f1_score
-        best_f1 = 0
+        # 3. Lấy probabilities trên tập Calibration để dò Threshold
         best_th = 0.50
-        
-        if len(y_prob_tune) > 0:
-            for th in np.arange(0.34, 0.75, 0.02):
-                preds = (y_prob_tune[:, 2] >= th).astype(int)
-                f1 = f1_score(y_true_binary, preds, zero_division=0)
-                if f1 > best_f1:
-                    best_f1 = f1
-                    best_th = th
-                    
-        logger.info(f"Đã Tune Threshold = {best_th:.2f} (OOS F1-BULLISH: {best_f1:.2f}) trên {len(y_prob_tune)} mẫu OOF.")
+        best_f1 = 0
+        if not df_calibration.empty:
+            logger.info("Sinh Calibration probabilities...")
+            y_prob_tune = self.model.predict_proba(df_calibration)
+            
+            # 4. Tune Threshold trên Calibration probabilities
+            logger.info("Tuning Probability Threshold trên tập Calibration...")
+            valid_mask = ~np.isnan(y_prob_tune[:, 0])
+            y_prob_tune_valid = y_prob_tune[valid_mask]
+            
+            y_true = self.model._map_labels(df_calibration["direction_label"]).values
+            y_true_tune = y_true[valid_mask]
+            y_true_binary = (y_true_tune == 2).astype(int)
+            
+            from sklearn.metrics import f1_score
+            
+            if len(y_prob_tune_valid) > 0:
+                for th in np.arange(0.34, 0.75, 0.02):
+                    preds = (y_prob_tune_valid[:, 2] >= th).astype(int)
+                    f1 = f1_score(y_true_binary, preds, zero_division=0)
+                    if f1 > best_f1:
+                        best_f1 = f1
+                        best_th = th
+                        
+            logger.info(f"Đã Tune Threshold = {best_th:.2f} (OOS F1-BULLISH: {best_f1:.2f}) trên {len(y_prob_tune_valid)} mẫu Calibration.")
+        else:
+            logger.warning("Không có tập Calibration. Dùng Threshold mặc định 0.5")
+            
         if "backtest" not in self.config:
             self.config["backtest"] = {}
         self.config["backtest"]["probability_threshold"] = float(best_th)
