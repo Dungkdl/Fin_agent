@@ -80,11 +80,11 @@ finsight universe build --quote-asset USDT --limit 10
 ```
 
 ### Giai đoạn 2: Tải và Tinh chế Dữ liệu Thô (Market Backfill)
-Lấy dữ liệu nến (Klines) từ Binance. Ở đây ta lấy khung ngày (`1d`) trong 3 năm để đủ dữ liệu cho Model học. Dữ liệu Silver được lưu ở định dạng `Parquet` siêu tối ưu.
+Lấy dữ liệu nến (Klines) từ Binance. Ở đây ta lấy khung ngày (`1d`) trong **5 năm gần nhất** cho nhiều đồng tiền điện tử hàng đầu (Top Crypto) để đảm bảo mô hình có đủ dữ liệu học hỏi các chu kỳ thị trường khác nhau. Dữ liệu Silver được lưu ở định dạng `Parquet` siêu tối ưu.
 
 ```bash
-# Tải dữ liệu 3 năm cho BTC và ETH, khung 1 ngày (1d)
-finsight market backfill --symbols BTCUSDT,ETHUSDT,BNBUSDT,SOLUSDT,XRPUSDT --intervals 1d --start 2021-01-01 --end 2024-01-01 --mode rest --no-dry-run
+# Tải dữ liệu 5 năm (Từ 2021-08-15 đến hiện tại) cho 11 đồng coin top đầu, khung 1 ngày (1d)
+finsight market backfill --symbols BTCUSDT,ETHUSDT,BNBUSDT,SOLUSDT,XRPUSDT,ADAUSDT,DOGEUSDT,DOTUSDT,MATICUSDT,AVAXUSDT,LINKUSDT --intervals 1d --start 2021-08-15 --end 2026-08-15 --mode rest --no-dry-run
 ```
 
 ### Giai đoạn 3: Feature Engineering & Dataset Builder 🆕

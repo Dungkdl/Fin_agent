@@ -61,12 +61,16 @@ class XGBoostQuantModel(BaseQuantModel):
             
         logger.info("Training final XGBoost model on full training set...")
         
+        from finsight.experts.quant.feature_engineering.weighting.class_weight import compute_class_weight
+        cw_final = compute_class_weight(df_train, self.target).values
+        w_final = w_train * cw_final if w_train is not None else cw_final
+        
         # Train
         self.model = xgb.XGBClassifier(**self.params)
         self.model.fit(
             df_train[self.features], 
             y_train, 
-            sample_weight=w_train,
+            sample_weight=w_final,
             verbose=False
         )
         
@@ -88,13 +92,23 @@ class XGBoostQuantModel(BaseQuantModel):
             }
             
             cv_scores = []
+            from finsight.experts.quant.feature_engineering.weighting.class_weight import compute_class_weight
             
             for train_idx, val_idx in cv_splitter.split(df_train):
-                X_tr, y_tr = df_train.iloc[train_idx][self.features], y_train.iloc[train_idx]
-                X_va, y_va = df_train.iloc[val_idx][self.features], y_train.iloc[val_idx]
+                df_tr = df_train.iloc[train_idx]
+                df_va = df_train.iloc[val_idx]
+                X_tr, y_tr = df_tr[self.features], y_train.iloc[train_idx]
+                X_va, y_va = df_va[self.features], y_train.iloc[val_idx]
                 
-                w_tr = w_train[train_idx] if w_train is not None else None
-                w_va = w_train[val_idx] if w_train is not None else None
+                # Tính class weight độc lập trên từng fold train
+                cw_tr = compute_class_weight(df_tr, self.target)
+                cw_va = df_va[self.target].map(
+                    {label: cw_tr.loc[df_tr[self.target] == label].iloc[0] if label in df_tr[self.target].values else 1.0 
+                     for label in df_va[self.target].unique()}
+                ).fillna(1.0)
+                
+                w_tr = w_train[train_idx] * cw_tr.values if w_train is not None else cw_tr.values
+                w_va = w_train[val_idx] * cw_va.values if w_train is not None else cw_va.values
                 
                 clf = xgb.XGBClassifier(**params)
                 

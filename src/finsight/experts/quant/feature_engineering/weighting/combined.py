@@ -22,8 +22,8 @@ class WeightBuilder:
             
         df = df.copy()
         
-        # 1. Tính từng thành phần
-        w_class = compute_class_weight(df) if self.config.get("class_weight", True) else 1.0
+        # 1. Tính từng thành phần (Bỏ class_weight khỏi đây để tính động trong mỗi fold)
+        w_class = 1.0
         w_recency = compute_recency_weight(df, reference_time) if self.config.get("recency_weight", False) else 1.0
         w_regime = compute_regime_weight(df, target_regime) if self.config.get("regime_weight", False) else 1.0
         w_quality = compute_quality_weight(df) if self.config.get("quality_weight", True) else 1.0

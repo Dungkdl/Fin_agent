@@ -61,7 +61,10 @@ class LightGBMQuantModel(BaseQuantModel):
             
         # Train final model on ALL training data with best params
         logger.info("Training final LightGBM model on full training set...")
-        train_data = lgb.Dataset(df_train[self.features], label=y_train, weight=w_train)
+        from finsight.experts.quant.feature_engineering.weighting.class_weight import compute_class_weight
+        cw_final = compute_class_weight(df_train, self.target)
+        w_final = w_train * cw_final if w_train is not None else cw_final
+        train_data = lgb.Dataset(df_train[self.features], label=y_train, weight=w_final)
         
         self.model = lgb.train(
             self.params,
@@ -86,13 +89,23 @@ class LightGBMQuantModel(BaseQuantModel):
             }
             
             cv_scores = []
+            from finsight.experts.quant.feature_engineering.weighting.class_weight import compute_class_weight
             
             for train_idx, val_idx in cv_splitter.split(df_train):
-                X_tr, y_tr = df_train.iloc[train_idx][self.features], y_train.iloc[train_idx]
-                X_va, y_va = df_train.iloc[val_idx][self.features], y_train.iloc[val_idx]
+                df_tr = df_train.iloc[train_idx]
+                df_va = df_train.iloc[val_idx]
+                X_tr, y_tr = df_tr[self.features], y_train.iloc[train_idx]
+                X_va, y_va = df_va[self.features], y_train.iloc[val_idx]
                 
-                w_tr = w_train.iloc[train_idx] if w_train is not None else None
-                w_va = w_train.iloc[val_idx] if w_train is not None else None
+                # Tính class weight độc lập trên từng fold train
+                cw_tr = compute_class_weight(df_tr, self.target)
+                cw_va = df_va[self.target].map(
+                    {label: cw_tr.loc[df_tr[self.target] == label].iloc[0] if label in df_tr[self.target].values else 1.0 
+                     for label in df_va[self.target].unique()}
+                ).fillna(1.0)
+                
+                w_tr = w_train.iloc[train_idx] * cw_tr if w_train is not None else cw_tr
+                w_va = w_train.iloc[val_idx] * cw_va if w_train is not None else cw_va
                 
                 dtrain = lgb.Dataset(X_tr, label=y_tr, weight=w_tr)
                 dval = lgb.Dataset(X_va, label=y_va, weight=w_va, reference=dtrain)

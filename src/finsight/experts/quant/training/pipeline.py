@@ -30,11 +30,13 @@ class TrainingPipeline:
         # Trong thực tế, embargo_steps phải đổi từ time string (e.g. "5d") sang số nến hoặc dùng date offset.
         # Ở đây ta giả định embargo = forecast_steps từ config
         self.embargo_steps = config.get("forecast_steps", 5)
+        self.input_interval = config.get("input_interval", "1d")
         self.splitter = WalkForwardSplitter(
             min_train_months=self.min_train_months,
             validation_months=self.validation_months,
             step_months=self.step_months,
-            embargo_steps=self.embargo_steps
+            embargo_steps=self.embargo_steps,
+            input_interval=self.input_interval
         )
 
     def run(self):
@@ -53,11 +55,23 @@ class TrainingPipeline:
         holdout_idx = df.index[holdout_mask]
         
         if len(holdout_idx) > 0:
-            first_holdout_idx = holdout_idx[0]
-            train_end_idx = first_holdout_idx - self.embargo_steps
-            train_time_limit = df["close_time"].iloc[train_end_idx]
+            # Chuyển đổi input_interval thành Timedelta (VD: 1d -> 1 days)
+            interval_str = self.input_interval.lower()
+            if interval_str.endswith('d'):
+                td = pd.Timedelta(days=int(interval_str[:-1]))
+            elif interval_str.endswith('h'):
+                td = pd.Timedelta(hours=int(interval_str[:-1]))
+            elif interval_str.endswith('m'):
+                td = pd.Timedelta(minutes=int(interval_str[:-1]))
+            else:
+                td = pd.Timedelta(days=1)
+                
+            embargo_time = td * self.embargo_steps
             
-            df_train_val = df[df["close_time"] <= train_time_limit].copy()
+            # Tập Train phải kết thúc trước thời điểm Holdout bắt đầu trừ đi embargo_time
+            train_time_limit = holdout_start - embargo_time
+            
+            df_train_val = df[df["close_time"] < train_time_limit].copy()
             df_holdout = df[holdout_mask].copy()
             logger.info(f"Tách Final Holdout: {len(df_holdout)} samples. Train/Val: {len(df_train_val)} samples.")
         else:
@@ -74,16 +88,41 @@ class TrainingPipeline:
         logger.info(f"Lưu mô hình tại {model_dir}")
         self.model.save(model_dir)
         
-        # 4. Đánh giá sơ bộ trên Holdout (Nếu có)
+        # 4. Tune Threshold trên Train/Val (Không dùng Holdout)
+        logger.info("Tuning Probability Threshold trên tập Train/Val...")
+        y_prob_train = self.model.predict_proba(df_train_val)
+        y_true_train = self.model._map_labels(df_train_val["direction_label"]).values
+        y_true_binary = (y_true_train == 2).astype(int)
+        
+        from sklearn.metrics import f1_score
+        best_f1 = 0
+        best_th = 0.50
+        for th in np.arange(0.50, 0.75, 0.02):
+            preds = (y_prob_train[:, 2] >= th).astype(int)
+            f1 = f1_score(y_true_binary, preds, zero_division=0)
+            if f1 > best_f1:
+                best_f1 = f1
+                best_th = th
+                
+        logger.info(f"Đã Tune Threshold = {best_th:.2f} (Train/Val F1-BULLISH: {best_f1:.2f})")
+        
+        if "backtest" not in self.config:
+            self.config["backtest"] = {}
+        self.config["backtest"]["probability_threshold"] = float(best_th)
+        
+        # 5. Đánh giá sơ bộ trên Holdout (Nếu có)
         if not df_holdout.empty:
             from finsight.experts.quant.training.evaluation import evaluate_classification, evaluate_slices
             from finsight.experts.quant.training.backtest import run_spot_backtest
             from finsight.experts.quant.training.shap_explainer import explain_model_with_shap
             from finsight.experts.quant.training.report import save_reports
             
-            logger.info("Chạy Evaluate Metrics trên Final Holdout...")
+            logger.info("Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...")
             y_prob = self.model.predict_proba(df_holdout)
             y_pred = np.argmax(y_prob, axis=1)
+            # Áp dụng custom threshold cho Bullish (nếu lớn hơn best_th thì là 2, v.v...)
+            y_pred = np.where(y_prob[:, 2] >= best_th, 2, np.where(y_prob[:, 0] >= best_th, 0, 1))
+            
             y_true = self.model._map_labels(df_holdout["direction_label"]).values
             
             metrics = evaluate_classification(y_true, y_pred, y_prob)

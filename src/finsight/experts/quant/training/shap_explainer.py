@@ -31,6 +31,10 @@ def explain_model_with_shap(model, df_test: pd.DataFrame, features: list, model_
             
         logger.info(f"Tính toán SHAP values trên {len(X_sample)} samples...")
         
+        if hasattr(model, "named_steps") or "Pipeline" in str(type(model)):
+            logger.info("Bỏ qua SHAP Explainer vì mô hình là dạng Pipeline/Linear (không hỗ trợ TreeExplainer).")
+            return []
+
         explainer = shap.TreeExplainer(model)
         shap_values = explainer.shap_values(X_sample)
         
@@ -61,5 +65,5 @@ def explain_model_with_shap(model, df_test: pd.DataFrame, features: list, model_
         return importance_df.to_dict(orient="records")
         
     except Exception as e:
-        logger.error(f"Lỗi khi chạy SHAP Explainer: {e}")
+        logger.warning(f"Bỏ qua SHAP Explainer do lỗi không tương thích: {e}")
         return []

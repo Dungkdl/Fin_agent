@@ -63,6 +63,10 @@ class SilverCandleStorage:
         except Exception:
             # File chưa tồn tại, ghi mới hoàn toàn
             pass
+            
+        # Ép kiểu lại một lần nữa trước khi lưu để tránh lỗi PyArrow schema (Ví dụ: old_df month bị infer thành int64)
+        df["year"] = df["year"].astype(int)
+        df["month"] = df["month"].astype(str).str.zfill(2)
         
         df.to_parquet(
             output_dir,

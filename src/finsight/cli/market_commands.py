@@ -44,38 +44,58 @@ def backfill(
     if request.dry_run:
         return
 
+    import logging
+    logger = logging.getLogger(__name__)
+
     async def _run() -> None:
         if plan.monthly_files:
-            typer.echo("\n[1/2] Processing Monthly ZIPs...")
+            msg = "\n[1/2] Processing Monthly ZIPs..."
+            typer.echo(msg)
+            logger.info(msg.strip())
             zip_results = await service.ingest_monthly_zip_plan(plan)
             for result in zip_results:
-                typer.echo(f"Downloaded: {result.download.path}")
+                msg = f"Downloaded: {result.download.path}"
+                typer.echo(msg)
+                logger.info(msg)
                 if result.silver_path:
-                    typer.echo(f"Saved to Silver: {result.silver_path}")
+                    msg = f"Saved to Silver: {result.silver_path}"
+                    typer.echo(msg)
+                    logger.info(msg)
                 if result.quality_report:
-                    typer.echo(
+                    msg = (
                         f"Quality Score: {result.quality_report.quality_score:.2%} "
                         f"| Total: {result.quality_report.total_rows} "
                         f"| Missing: {result.quality_report.missing_candles} "
                         f"| Duplicates: {result.quality_report.duplicate_rows}"
                     )
+                    typer.echo(msg)
+                    logger.info(msg)
         
         if plan.rest_requests:
-            typer.echo("\n[2/2] Processing REST Incremental...")
+            msg = "\n[2/2] Processing REST Incremental..."
+            typer.echo(msg)
+            logger.info(msg.strip())
             rest_results = await service.ingest_rest_plan(plan)
             for result in rest_results:
-                typer.echo(f"Fetched REST: {result.symbol} {result.interval} ({result.candles_count} candles)")
+                msg = f"Fetched REST: {result.symbol} {result.interval} ({result.candles_count} candles)"
+                typer.echo(msg)
+                logger.info(msg)
                 if result.silver_path:
-                    typer.echo(f"Saved to Silver: {result.silver_path}")
+                    msg = f"Saved to Silver: {result.silver_path}"
+                    typer.echo(msg)
+                    logger.info(msg)
                 if result.quality_report:
-                    typer.echo(
+                    msg = (
                         f"Quality Score: {result.quality_report.quality_score:.2%} "
                         f"| Total: {result.quality_report.total_rows} "
                         f"| Missing: {result.quality_report.missing_candles} "
                         f"| Duplicates: {result.quality_report.duplicate_rows}"
                     )
+                    typer.echo(msg)
+                    logger.info(msg)
                     
         typer.echo("\nDone!")
+        logger.info("Market Backfill Done!")
 
     try:
         asyncio.run(_run())

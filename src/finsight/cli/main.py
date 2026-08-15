@@ -28,6 +28,11 @@ def main(
         typer.Option("--verbose", help="Enable verbose command output."),
     ] = False,
 ) -> None:
+    from finsight.config.logging import configure_logging
+    
+    # Kích hoạt hệ thống ghi log ra file
+    configure_logging(level="DEBUG" if verbose else "INFO")
+    
     if verbose:
         typer.echo("Verbose mode enabled.")
 

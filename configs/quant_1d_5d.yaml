@@ -16,7 +16,7 @@ universe:
     - SOLUSDT
     - XRPUSDT
 data:
-  history_years: 3
+  history_years: 5
   source: hybrid
   use_monthly_zip: true
   use_rest_incremental: true
