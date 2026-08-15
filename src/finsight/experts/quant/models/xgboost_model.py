@@ -138,6 +138,40 @@ class XGBoostQuantModel(BaseQuantModel):
             
         return best_params
 
+    def cross_val_predict(self, df_train: pd.DataFrame, cv_splitter) -> np.ndarray:
+        logger.info("Sinh Walk-Forward Out-Of-Fold probabilities cho XGBoost...")
+        df_train = df_train.copy()
+        for col in self.features:
+            if df_train[col].dtype == "object":
+                df_train[col] = df_train[col].astype("category")
+                
+        y_train = self._map_labels(df_train[self.target])
+        w_train = df_train[self.weight_col].values if self.weight_col in df_train.columns else None
+        
+        oof_preds = np.full((len(df_train), 3), np.nan)
+        from finsight.experts.quant.feature_engineering.weighting.class_weight import compute_class_weight
+        
+        for train_idx, val_idx in cv_splitter.split(df_train):
+            df_tr = df_train.iloc[train_idx]
+            df_va = df_train.iloc[val_idx]
+            X_tr, y_tr = df_tr[self.features], y_train.iloc[train_idx]
+            X_va = df_va[self.features]
+            
+            cw_tr = compute_class_weight(df_tr, self.target)
+            w_tr = w_train[train_idx] * cw_tr.values if w_train is not None else cw_tr.values
+            
+            clf = xgb.XGBClassifier(**self.params)
+            clf.fit(
+                X_tr, y_tr, 
+                sample_weight=w_tr,
+                verbose=False
+            )
+            
+            preds = clf.predict_proba(X_va)
+            oof_preds[val_idx] = preds
+            
+        return oof_preds
+
     def predict_proba(self, df_test: pd.DataFrame) -> np.ndarray:
         if self.model is None:
             raise ValueError("Model is not trained yet!")

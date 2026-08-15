@@ -22,6 +22,12 @@ class BaseQuantModel(ABC):
         pass
 
     @abstractmethod
+    def cross_val_predict(self, df_train: pd.DataFrame, cv_splitter) -> np.ndarray:
+        """
+        Sinh Out-Of-Fold probabilities sử dụng Walk-Forward CV.
+        """
+        pass
+    @abstractmethod
     def predict_proba(self, df_test: pd.DataFrame) -> np.ndarray:
         """
         Dự đoán xác suất cho các nhãn (Bullish, Sideways, Bearish).

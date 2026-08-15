@@ -1,342 +1,250 @@
 FIN_AGENT - QUANT_EXPERT
-TỔNG HỢP CÁC LỖI / VẤN ĐỀ CÒN LẠI SAU LẦN SỬA MỚI NHẤT
+CÁC LỖI / RỦI RO NGUY CẤP CẦN SỬA TRƯỚC KHI TIẾP TỤC
 ====================================================================
 
 Mục tiêu:
-- Ghi lại các lỗi còn tồn tại trong Quant Expert sau lần cập nhật mới nhất.
-- Phân biệt lỗi code/validation với vấn đề mô hình thực sự yếu.
-- Sắp xếp thứ tự sửa để không tuning model sai hướng.
-- Làm nền tảng trước khi chuyển sang Realtime / Expert News.
-
-KẾT QUẢ MỚI NHẤT
---------------------------------------------------------------------
-
-LightGBM:
-- Balanced Accuracy: khoảng 36.35%
-- Macro F1: khoảng 0.34
-- Log Loss: khoảng 1.103
-- Brier: khoảng 0.223
-
-XGBoost:
-- Balanced Accuracy: khoảng 32.77%
-- Macro F1: khoảng 0.26
-- Log Loss: khoảng 1.098
-- Brier: khoảng 0.222
-
-CatBoost:
-- Balanced Accuracy: khoảng 36.43%
-- Macro F1: khoảng 0.31
-- Log Loss: khoảng 1.103
-- Brier: khoảng 0.223
-
-Nhận xét:
-- Lỗi classification threshold trước đây đã được sửa.
-- Metric hiện tại đáng tin hơn trước.
-- Tuy nhiên signal hiện vẫn yếu.
-- Log Loss gần ln(3) = 1.0986 cho thấy probability quality gần no-skill baseline.
-- Vì vậy từ giai đoạn này cần tập trung vào validation đúng, label, dataset và feature design.
+- Chỉ giữ các lỗi/rủi ro quan trọng nhất còn tồn tại.
+- Ưu tiên những vấn đề có thể làm validation, threshold hoặc backtest sai.
+- Không đưa các cải tiến phụ chưa cấp thiết.
+- Chỉ sau khi sửa các mục này mới nên tiếp tục tối ưu label/features hoặc làm Realtime / Expert News.
 
 
 ====================================================================
-1. [CRITICAL] THRESHOLD TUNING VẪN CHƯA THỰC SỰ OUT-OF-SAMPLE
+1. [CRITICAL] CHƯA CÓ EMBARGO GIỮA TRAIN-ONLY VÀ TUNE SET
 ====================================================================
 
-File liên quan:
+Vị trí liên quan:
 src/finsight/experts/quant/training/pipeline.py
 
 Hiện trạng:
-Pipeline train final model trên toàn bộ:
+Pipeline đã tách:
 
-    df_train_val
+    Train Only
+        ->
+    Tune OOS
+        ->
+    Retrain Final
+        ->
+    Holdout
 
-Sau đó lấy một phần cuối của chính df_train_val:
+Đây là cải thiện đúng.
 
-    df_tune
+Tuy nhiên ranh giới giữa Train Only và Tune vẫn chưa purge/embargo theo forecast horizon.
 
-rồi:
+Ví dụ:
+Tune bắt đầu ngày:
 
-    y_prob_tune = model.predict_proba(df_tune)
+    2026-07-01
 
-để chọn probability threshold.
+Label dùng giá:
 
-Vấn đề:
-df_tune đã nằm trong dữ liệu mà final model vừa train.
+    t + 5 ngày
 
-Do đó dù log gọi đây là:
+Một train sample ngày:
 
-    OOS Validation
+    2026-06-28
 
-thì thực chất vẫn là:
+có label sử dụng giá ngày:
 
-    IN-SAMPLE threshold tuning
+    2026-07-03
+
+Tức train sample vẫn dùng dữ liệu nằm trong khoảng Tune.
+
+Đây là target leakage ở ranh giới Train -> Tune.
 
 Vì sao nguy hiểm:
-- Threshold có thể bị overfit.
-- F1 BULLISH dùng để chọn threshold có thể lạc quan hơn thực tế.
-- Trading policy sau này sẽ dựa vào confidence threshold không đáng tin.
-- Final holdout vẫn sạch, nhưng threshold không được chọn theo quy trình đúng.
+- Threshold được tune trên tập được gọi là OOS nhưng training label đã nhìn xuyên vào thời gian Tune.
+- OOS F1 / probability threshold có thể vẫn bị lạc quan.
+- Các quyết định trading threshold tiếp theo không hoàn toàn đáng tin.
 
-Cách sửa đúng:
-Dùng OOF probabilities sinh ra từ Walk-Forward CV.
+Cách sửa:
+Phải có embargo trước tune_start_time.
+
+Ví dụ:
+
+    embargo = forecast_horizon
+
+    train_limit = tune_start_time - embargo
+
+    df_train_only = df_train_val[
+        df_train_val["close_time"] < train_limit
+    ]
+
+Tốt nhất:
+Dùng label_end_time.
+
+Chỉ cho train sample nếu:
+
+    label_end_time < tune_start_time
+
+Đây là cách an toàn nhất.
+
+Tiêu chí DONE:
+[ ] Không train sample nào có label_end_time >= tune_start_time.
+[ ] Có unit test cho ranh giới Train -> Tune.
+[ ] Test đúng với forecast_steps = 5.
+[ ] Nếu đổi horizon thì embargo tự đổi theo horizon.
+
+
+====================================================================
+2. [CRITICAL] THRESHOLD TUNING VẪN CHỈ DÙNG MỘT TUNE WINDOW, CHƯA PHẢI WALK-FORWARD OOF THẬT
+====================================================================
+
+Hiện trạng:
+Threshold được tune bằng một phần cuối của train/validation timeline.
+
+Flow hiện tại gần như:
+
+    Train Only
+        ->
+    Tune window
+        ->
+    chọn threshold
+
+Điều này tốt hơn in-sample tuning cũ,
+nhưng vẫn chỉ dựa vào một market regime / một giai đoạn.
+
+Vấn đề:
+Một threshold tốt trong 1-2 tháng có thể không ổn ở:
+- bull regime
+- bear regime
+- high volatility
+- low volatility
+
+Kết quả hiện tại cũng đáng nghi:
+Tree models đều chọn:
+
+    threshold = 0.34
+
+là lower bound của search range.
+
+OOS Bull F1 của tree models chỉ khoảng:
+
+    0.04 - 0.05
+
+Điều này cho thấy threshold hiện chưa có stability tốt.
+
+Vì sao nguy hiểm:
+Nếu threshold được dùng cho trading,
+một threshold không ổn định có thể:
+- trade quá nhiều
+- bias BULLISH
+- tăng turnover
+- làm backtest không generalize
+
+Cách sửa:
+Sinh Walk-Forward OOF predictions thật sự.
 
 Ví dụ:
 
 Fold 1:
-    Train -> Validation prediction
+    Train -> Val prediction
 
 Fold 2:
-    Train -> Validation prediction
+    Train -> Val prediction
 
 Fold 3:
-    Train -> Validation prediction
+    Train -> Val prediction
 
-Ghép các validation prediction lại:
+...
+
+Ghép:
 
     OOF probabilities
 
 Sau đó:
 
-    threshold = tune_threshold(OOF probabilities)
+    tune threshold trên toàn OOF probabilities
 
 Rồi:
-1. Freeze threshold.
-2. Train final model trên toàn train + validation.
-3. Evaluate duy nhất trên final holdout.
+1. freeze threshold
+2. train final model
+3. evaluate final test
 
-Pseudo-flow:
-
-    historical train data
-          |
-          v
-    walk-forward folds
-          |
-          v
-    OOF probabilities
-          |
-          v
-    tune threshold
-          |
-          v
-    freeze threshold
-          |
-          v
-    train final model
-          |
-          v
-    untouched holdout
-
-Tiêu chí kiểm tra:
-- Không sample nào dùng để tune threshold được final model train trước khi tạo prediction đó.
-- Threshold được tạo từ OOF prediction.
-- Holdout tuyệt đối không tham gia threshold search.
+Tiêu chí DONE:
+[ ] Mỗi OOF prediction được tạo bởi model chưa train trên sample đó.
+[ ] Threshold chỉ tune trên OOF predictions.
+[ ] Holdout không tham gia threshold search.
+[ ] Threshold không phụ thuộc chỉ một tune regime.
 
 
 ====================================================================
-2. [HIGH] THRESHOLD SEARCH CHẠM LOWER BOUND 0.34
+3. [CRITICAL] FINAL HOLDOUT HIỆN TẠI KHÔNG CÒN THẬT SỰ "FINAL"
 ====================================================================
 
 Hiện trạng:
-Threshold search khoảng:
+Cùng một holdout khoảng:
 
-    0.34 -> 0.74
+    465 samples
 
-Kết quả:
-LightGBM:
-    best threshold = 0.34
+đã được evaluate nhiều lần sau nhiều lần sửa code.
 
-XGBoost:
-    best threshold = 0.34
-
-CatBoost:
-    best threshold = 0.34
-
-Vấn đề:
-Cả 3 model đều chọn đúng lower bound.
-
-Đây là red flag.
-
-Nó cho thấy objective hiện tại có xu hướng thích threshold càng thấp càng tốt.
-
-Nguyên nhân có thể là:
-- Optimize F1 BULLISH làm recall tăng mạnh khi giảm threshold.
-- Model probability không được calibration tốt.
-- BULLISH predictions đang bị ưu tiên quá nhiều.
-
-Vì sao cần quan tâm:
-Một threshold tạo F1 cao chưa chắc tạo trading edge.
-
-Ví dụ:
-Threshold thấp có thể khiến:
-
-    BUY
-    BUY
-    BUY
-    BUY
-    BUY
-
-quá thường xuyên.
-
-F1 có thể tăng nhưng:
-- transaction cost tăng
-- turnover tăng
-- drawdown tăng
-- return không tăng
-
-Cách sửa:
-Sau khi có OOF prediction thật sự, đánh giá threshold theo:
-
-    threshold
-    trade_count
-    BULLISH precision
-    BULLISH recall
-    average future return
-    total return
-    Sharpe
-    max drawdown
-    turnover
-
-Không tối ưu chỉ một metric classification.
-
-Có thể test:
-    0.30
-    0.32
-    0.34
-    0.36
-    0.38
-    0.40
-    ...
-    0.60
-
-Nhưng chỉ sau khi threshold tuning đã OOS đúng.
-
-
-====================================================================
-3. [HIGH] MODEL ĐANG BIAS MẠNH VỀ BULLISH
-====================================================================
-
-Kết quả holdout cho thấy prediction distribution lệch khá mạnh.
-
-LightGBM:
-    BEARISH  khoảng 158
-    SIDEWAYS khoảng 66
-    BULLISH  khoảng 241
-
-XGBoost:
-    BEARISH  khoảng 110
-    SIDEWAYS khoảng 32
-    BULLISH  khoảng 323
-
-CatBoost:
-    BEARISH  khoảng 81
-    SIDEWAYS khoảng 71
-    BULLISH  khoảng 313
-
-Trong khi true holdout distribution khoảng:
-
-    BEARISH  221
-    SIDEWAYS 117
-    BULLISH  127
+Kết quả holdout đã được dùng để:
+- xem model nào tốt
+- quyết định sửa evaluation
+- quyết định sửa threshold
+- quyết định ưu tiên XGBoost
+- quyết định label cần redesign
 
 Vấn đề:
-XGBoost/CatBoost dự đoán BULLISH quá nhiều.
+Dù code không train trực tiếp trên holdout,
+con người đã nhìn kết quả nhiều lần và thay pipeline dựa vào nó.
 
-Đặc biệt:
-- XGBoost gần 70% prediction là BULLISH.
-- CatBoost khoảng 67% prediction là BULLISH.
-- LightGBM khoảng 52%.
+Đây là:
+
+    human-in-the-loop test set overfitting
+
+Nghĩa là holdout hiện tại đã trở thành:
+
+    development holdout
+
+không còn là final proof.
 
 Vì sao nguy hiểm:
-Model có thể đang:
-- học bias regime,
-- chịu ảnh hưởng class weighting,
-- label không cân bằng đúng theo market regime,
-- hoặc feature không đủ phân biệt bearish/sideways.
+Nếu tiếp tục tối ưu dựa trên 465 samples này,
+pipeline có thể dần overfit vào chính holdout dù không hề fit bằng gradient.
 
-Cách kiểm tra:
-1. In true class distribution theo:
-   - toàn train
-   - từng fold
-   - holdout
+Kết quả cuối cùng sẽ lạc quan.
 
-2. In prediction distribution từng model.
+Cách sửa:
+Từ bây giờ:
 
-3. In confusion matrix.
+    current holdout -> đổi vai trò thành DEV HOLDOUT
 
-4. So:
-   - model không class-weight
-   - model có class-weight
+Mọi experiment tiếp theo nên chọn bằng:
 
-5. Kiểm tra calibration theo từng class.
+    Walk-Forward OOF metrics
 
-6. Đánh giá theo regime:
-   - bull market
-   - bear market
-   - sideways
+Sau khi chốt:
+- label
+- features
+- model
+- threshold
+- universe
 
-Khuyến nghị:
-Hiện LightGBM là baseline tốt nhất để tiếp tục vì balance giữa các class tốt hơn CatBoost/XGBoost.
+thì dùng:
 
+A. một future test window mới chưa từng xem
+hoặc
+B. shadow live data mới sinh sau thời điểm chốt model
 
-====================================================================
-4. [HIGH] SIGNAL HIỆN TẠI VẪN RẤT GẦN NO-SKILL BASELINE
-====================================================================
+làm final test.
 
-Với bài toán 3 class:
-
-Uniform probability:
-
-    [1/3, 1/3, 1/3]
-
-có Log Loss:
-
-    -log(1/3)
-    = ln(3)
-    ≈ 1.0986
-
-Kết quả:
-
-    LightGBM ≈ 1.103
-    XGBoost  ≈ 1.098
-    CatBoost ≈ 1.103
-
-Điều này cho thấy probability prediction hiện gần no-skill.
-
-Brier uniform multiclass cũng khoảng:
-
-    0.222
-
-Model hiện khoảng:
-
-    0.222 - 0.223
-
-Vì sao quan trọng:
-Balanced Accuracy 36% có vẻ cao hơn random 33% một chút,
-nhưng probability quality gần như chưa tốt hơn uniform prediction.
-
-Kết luận:
-Hiện có thể có một chút directional signal,
-nhưng rất yếu.
-
-Không nên:
-    đổi LightGBM -> Transformer
-ngay lúc này.
-
-Nên tập trung:
-    label
-    universe
-    features
-    validation
+Tiêu chí DONE:
+[ ] Không dùng current holdout để chọn hyperparameter/label/feature nữa.
+[ ] Có final test period mới chưa từng xem.
+[ ] Chỉ evaluate final test sau khi pipeline freeze.
 
 
 ====================================================================
-5. [HIGH] DATASET BUILDER VẪN CHỈ TRAIN KHOẢNG 5 COIN
+4. [HIGH] DATASET HIỆN VẪN CHỈ DÙNG 5 COIN DÙ CONFIG CÓ 8-12 SYMBOL
 ====================================================================
 
-File liên quan:
+Vị trí:
 configs/quant_1d_5d.yaml
 src/finsight/experts/quant/datasets/builder.py
 
-Hiện config required_symbols khoảng:
+Hiện config required_symbols vẫn chủ yếu:
 
     BTCUSDT
     ETHUSDT
@@ -344,35 +252,32 @@ Hiện config required_symbols khoảng:
     SOLUSDT
     XRPUSDT
 
-DatasetBuilder vẫn lấy:
+DatasetBuilder vẫn lấy danh sách này.
 
-    config["universe"]["required_symbols"]
-
-Do đó dù repo có tải thêm nhiều coin,
-Quant training thực tế vẫn chủ yếu dùng 5 coin.
-
-Dấu hiệu:
-5 năm * 365 ngày * 5 coin
-xấp xỉ đúng số sample hiện tại.
-
-Vấn đề:
-Config có:
+Dù hệ thống có:
     min_symbols: 8
     max_symbols: 12
 
-nhưng hai giá trị này chưa thực sự điều khiển DatasetBuilder.
+Quant training thực tế vẫn khoảng 5 coin.
 
-Vì sao nên sửa:
-Nhiều asset hơn giúp:
-- tăng cross-sectional variation
-- học nhiều volatility profiles
-- học relative strength tốt hơn
-- giảm phụ thuộc vào regime riêng của 5 coin lớn
+Dấu hiệu:
+5 năm x 365 ngày x 5 coin
+gần khớp số sample hiện tại.
 
-Khuyến nghị experiment tiếp theo:
-Dùng 8-10 coin thật sự.
+Vì sao đây là vấn đề cấp cao:
+Model multi-asset hiện học từ universe quá nhỏ.
+
+Dễ:
+- overfit vào 5 coin lớn
+- thiếu cross-sectional variation
+- thiếu nhiều volatility profile
+- relative strength feature ít đa dạng
+
+Cách sửa trước mắt:
+Experiment fixed universe 8-10 coin sạch.
 
 Ví dụ:
+
     BTC
     ETH
     BNB
@@ -384,378 +289,273 @@ Ví dụ:
     AVAX
     LINK
 
-Lưu ý:
-Không nên thêm asset có dữ liệu lịch sử không sạch chỉ để tăng số lượng.
+Không cần point-in-time universe phức tạp ngay ở bước đầu,
+nhưng phải đảm bảo DatasetBuilder thật sự load các symbol đó.
 
 Về lâu dài:
     Universe Builder
-          ->
-    point-in-time universe artifact
-          ->
+        ->
+    point-in-time universe
+        ->
     Dataset Builder
 
-
-====================================================================
-6. [HIGH] HISTORY_YEARS ĐANG ĐƯỢC ĐỌC SAI PATH CONFIG
-====================================================================
-
-File liên quan:
-configs/quant_1d_5d.yaml
-src/finsight/experts/quant/datasets/builder.py
-
-Config hiện dạng:
-
-    data:
-        history_years: 5
-
-Nhưng DatasetBuilder đang có logic gần như:
-
-    self.config.get("history_years", 5)
-
-Vấn đề:
-history_years nằm dưới:
-
-    config["data"]
-
-chứ không nằm ở root.
-
-Hiện tại code vẫn chạy đúng vì:
-    default = 5
-
-và config cũng đang:
-    history_years = 5
-
-Đây chỉ là trùng hợp.
-
-Nếu đổi config:
-
-    history_years: 3
-
-thì DatasetBuilder vẫn có thể lấy default 5.
-
-Cách sửa:
-
-    history_years = (
-        self.config
-        .get("data", {})
-        .get("history_years", 5)
-    )
-
-Tiêu chí kiểm tra:
-- Đổi YAML sang 3 năm.
-- Dataset manifest phải phản ánh đúng 3 năm.
-- Đổi lại 5 năm.
-- Sample count phải thay đổi tương ứng.
+Tiêu chí DONE:
+[ ] Log in rõ danh sách symbol train.
+[ ] Dataset manifest ghi number_of_symbols.
+[ ] Sample count phù hợp với số asset.
+[ ] min_symbols/max_symbols hoặc universe artifact thực sự có tác dụng.
 
 
 ====================================================================
-7. [HIGH] FORECAST_STEPS TRONG BACKTEST ĐANG DỰA VÀO DEFAULT 5
+5. [HIGH] LABEL DESIGN HIỆN TẠI CÓ KHẢ NĂNG LÀM TARGET QUÁ NHIỄU
 ====================================================================
 
-File liên quan:
-src/finsight/experts/quant/training/pipeline.py
-src/finsight/experts/quant/training/backtest.py
-configs/quant_1d_5d.yaml
-
-Hiện trạng:
-Pipeline truyền:
-
-    self.config.get("backtest", {})
-
-vào:
-
-    run_spot_backtest(...)
-
-Nhưng backtest lại đọc:
-
-    config.get("forecast_steps", 5)
-
-Trong YAML:
-forecast_steps nằm ở root,
-không nằm dưới backtest.
-
-Hiện không xảy ra sai kết quả vì:
-    root forecast_steps = 5
-và:
-    default = 5
-
-Nhưng nếu sau này đổi:
-
-    forecast_steps = 10
-
-model sẽ dự báo 10 bước,
-trong khi backtest vẫn có thể giữ position 5 bước.
-
-Đây là bug cấu hình.
-
-Cách sửa:
-Truyền explicit:
-
-    bt_config = {
-        **self.config.get("backtest", {}),
-        "forecast_steps": self.config.get("forecast_steps", 5),
-    }
-
-    run_spot_backtest(df_sim, bt_config)
-
-Hoặc thay schema config để backtest lấy trực tiếp full config.
-
-Tiêu chí kiểm tra:
-Đổi forecast_steps = 10.
-Backtest phải giữ đúng 10 candles.
-
-
-====================================================================
-8. [HIGH] LABEL DESIGN HIỆN CÓ KHẢ NĂNG LÀ NÚT THẮT CHÍNH
-====================================================================
-
-File liên quan:
+Vị trí:
 src/finsight/experts/quant/feature_engineering/labels/direction.py
 
-Hiện label dạng:
+Hiện label:
 
     future_return_5d
         /
-    daily_volatility
+    volatility_1d
 
 Tức:
+- numerator dùng horizon 5 ngày
+- denominator dùng volatility 1 ngày
 
-    numerator = return horizon 5 ngày
-    denominator = volatility horizon 1 ngày
+Sau đó threshold khoảng:
 
-Sau đó dùng threshold:
-
-    > +0.5 -> BULLISH
-    < -0.5 -> BEARISH
-    else    -> SIDEWAYS
-
-Vấn đề:
-Hai horizon không đồng nhất.
+    +/- 0.5
 
 Ví dụ:
 daily volatility = 4%
 
-Threshold hiện tại:
-    0.5 * 4%
-    = 2%
+Bullish threshold hiện tương đương:
 
-Tức chỉ cần:
     +2% trong 5 ngày
-đã được label BULLISH.
+
+Bearish:
+
+    -2% trong 5 ngày
 
 Với crypto,
-±2% trong 5 ngày có thể chỉ là noise.
+±2% / 5 ngày có thể chủ yếu là noise.
 
-Điều này làm classification target rất khó học.
+Vì sao đây là rủi ro lớn:
+Pipeline validation hiện đã sạch hơn,
+nhưng model tốt nhất vẫn chỉ:
 
-Khuyến nghị:
-Không thay model.
-Giữ LightGBM cố định và chạy 3 label experiment.
+    Balanced Accuracy ~37%
+    Log Loss ~1.095
 
-LABEL A - CURRENT:
-    future_return_5d / vol_1d
+so với no-skill 3-class:
 
-LABEL B - SQRT TIME:
-    future_return_5d / (vol_1d * sqrt(5))
+    Log Loss ~1.0986
 
-LABEL C - MATCHED HORIZON:
-    future_return_5d / rolling_std(historical_5d_returns)
+Tức signal rất yếu.
 
-So sánh:
-
-    class distribution
-    OOF Log Loss
-    OOF Brier
-    OOF Macro F1
-    holdout Log Loss
-    holdout Brier
-    Balanced Accuracy
-    per-class recall
-    backtest return
-
-Không dùng final holdout để chọn label nếu chạy quá nhiều experiment.
-Nếu research nhiều label,
-nên có một test window cuối cùng chưa đụng tới.
-
-
-====================================================================
-9. [MEDIUM] RAW OHLCV VẪN CÓ THỂ ĐƯỢC MODEL SỬ DỤNG
-====================================================================
-
-File liên quan:
-- LightGBM model
-- XGBoost model
-- CatBoost model
-
-Feature selection hiện chưa loại rõ:
-
-    open
-    high
-    low
-    close
-    volume
-
-Vấn đề:
-Trong model multi-asset:
-
-BTC:
-    close rất lớn
-
-XRP:
-    close rất nhỏ
-
-Raw price có thể trở thành proxy nhận diện symbol.
-
-Model có thể học:
-    "giá lớn => BTC"
-thay vì:
-    "pattern động lượng/volatility hiện tại => bullish"
-
-Raw volume cũng có scale rất khác giữa các coin.
-
-Khuyến nghị:
-Chạy ablation.
-
-Experiment A:
-    all features + raw OHLCV
-
-Experiment B:
-    all normalized features
-    - raw OHLCV
-
-Ưu tiên feature:
-
-    return_1
-    return_5
-    log_return
-    close / EMA - 1
-    close / SMA - 1
-    ATR / close
-    high / close - 1
-    low / close - 1
-    volume / rolling_volume
-    z-score
-    relative strength vs BTC
-    cross-sectional ranks
-
-Giữ experiment khác hoàn toàn giống nhau.
-
-Tiêu chí:
-So bằng OOF + holdout.
-Không quyết định dựa vào train feature importance.
-
-
-====================================================================
-10. [MEDIUM] CLASS WEIGHT CÓ THỂ ĐANG GÓP PHẦN GÂY BULLISH BIAS
-====================================================================
-
-Class weighting đã được chuyển về fold-local,
-đây là sửa đúng.
-
-Tuy nhiên prediction distribution hiện nghiêng mạnh về BULLISH.
-
-Cần chạy thêm ablation:
-
-Experiment A:
-    class weights ON
-
-Experiment B:
-    class weights OFF
-
-Experiment C:
-    capped class weights
-
-Ví dụ thay vì full inverse-frequency,
-có thể giới hạn:
-
-    max_weight_ratio <= 1.5 hoặc 2.0
-
-Vì sao:
-Inverse-frequency weighting có thể làm model over-compensate
-một class ít hơn trong train.
-
-Không khẳng định đây là nguyên nhân chính,
-nhưng cần kiểm tra.
-
-
-====================================================================
-11. [MEDIUM] LOGISTIC REGRESSION KHÔNG ĐƯỢC WEIGHT GIỐNG TREE MODELS
-====================================================================
-
-Hiện tree models:
-    LightGBM
-    XGBoost
-    CatBoost
-
-có fold-local class weighting.
-
-Logistic Regression lại chủ yếu dùng:
-
-    final_weight
-
-mà không áp cùng class balancing logic.
-
-Vấn đề:
-Comparison giữa Logistic và tree models không hoàn toàn apples-to-apples.
-
-Hai lựa chọn:
-
-A. Logistic là UNWEIGHTED baseline.
-   -> ghi rõ trong report.
-
-B. Muốn comparison công bằng.
-   -> áp cùng fold-local class weighting.
-
-Không phải bug lớn nếu Logistic chỉ là baseline,
-nhưng phải rõ semantics.
-
-
-====================================================================
-12. [MEDIUM] BACKTEST SHARPE VẪN CHỈ LÀ PSEUDO SHARPE
-====================================================================
-
-File liên quan:
-src/finsight/experts/quant/training/backtest.py
-
-Hiện metric dạng:
-
-    mean(trade_returns)
-    -------------------
-    std(trade_returns)
-    * sqrt(number_of_trades)
-
-được gọi:
-
-    pseudo_sharpe_ratio
-
-Tên gọi này là đúng,
-nhưng chưa phải portfolio Sharpe.
-
-Vấn đề:
-Trade return:
-- không cách đều thời gian
-- có thể overlap
-- exposure khác nhau
-- capital allocation khác nhau
-
-Do đó không thể diễn giải như annualized Sharpe.
+Sau khi sửa leakage chính,
+label trở thành nghi phạm lớn nhất.
 
 Cách sửa:
-Tạo portfolio equity curve theo từng ngày/candle.
+Không thay model đồng thời.
 
-Lưu:
+Giữ XGBoost hoặc LightGBM cố định.
 
-    timestamp
-    cash
-    position_value
-    unrealized_pnl
-    realized_pnl
-    total_equity
-    portfolio_return
-    exposure
+Test:
+
+LABEL A:
+    return_5d / vol_1d
+
+LABEL B:
+    return_5d / (vol_1d * sqrt(5))
+
+LABEL C:
+    return_5d / historical_volatility_5d
+
+So bằng:
+    Walk-Forward OOF Log Loss
+    OOF Brier
+    OOF Macro F1
+    OOF Balanced Accuracy
+    class distribution
+
+Không chọn label bằng current holdout.
+
+Tiêu chí DONE:
+[ ] Có experiment A/B/C.
+[ ] Model cố định khi so label.
+[ ] Chọn label bằng OOF.
+[ ] Final test chưa được xem.
+
+
+====================================================================
+6. [HIGH] MODEL ĐANG BIAS MẠNH VỀ BULLISH
+====================================================================
+
+Kết quả hiện tại:
+True holdout xấp xỉ:
+
+    BEARISH   47.5%
+    SIDEWAYS  25.2%
+    BULLISH   27.3%
+
+Nhưng prediction:
+
+LightGBM:
+    BULLISH khoảng 67%
+
+XGBoost:
+    BULLISH khoảng 60%
+
+CatBoost:
+    BULLISH khoảng 75%
+
+Logistic:
+    BULLISH khoảng 85%
+    SIDEWAYS gần 0%
+
+Vấn đề:
+Prediction distribution lệch rất mạnh khỏi true distribution.
+
+Có thể do:
+- class weighting
+- label design
+- train regime
+- feature signal yếu
+- calibration kém
+
+Vì sao nguy hiểm:
+Trading system có thể liên tục BUY.
+
+Nếu thị trường regime thay đổi,
+drawdown có thể lớn.
+
+Cách xử lý:
+Ablation:
+
+A.
+    class weight ON
+
+B.
+    class weight OFF
+
+C.
+    capped class weights
+
+Ngoài ra:
+- evaluate per regime
+- xem prediction distribution từng fold
+- calibration per class
+- kiểm tra train class distribution
+
+Không nên chữa bias chỉ bằng threshold.
+
+Tiêu chí DONE:
+[ ] Prediction distribution được log theo fold.
+[ ] Có class-weight ablation.
+[ ] Có per-class recall/precision.
+[ ] Không còn class collapse nghiêm trọng.
+
+
+====================================================================
+7. [HIGH] PROBABILITY EDGE HIỆN QUÁ NHỎ - CHƯA ĐỦ ĐỂ CHUYỂN REALTIME PRODUCTION
+====================================================================
+
+Model tốt nhất hiện tại:
+XGBoost khoảng:
+
+    Balanced Accuracy = 37.1%
+    Macro F1 = 0.33
+    Log Loss = 1.095
+    Brier = 0.221
+
+No-skill 3-class uniform:
+
+    Balanced Accuracy ≈ 33.3%
+    Log Loss ≈ 1.0986
+    Brier ≈ 0.2222
+
+Improvement hiện rất nhỏ.
+
+Vấn đề:
+Chưa biết chênh lệch này là:
+- signal thật
+hay
+- sampling noise
+
+Holdout chỉ khoảng 465 samples.
+
+Cách xử lý:
+Trước khi production:
+
+1. Bootstrap confidence interval cho:
+   - Log Loss delta
+   - Brier delta
+   - Balanced Accuracy delta
+
+2. Compare against:
+   - uniform probability baseline
+   - historical class prior baseline
+   - majority classifier
+   - simple momentum baseline
+
+3. Xem stability theo fold/regime.
+
+Tiêu chí DONE:
+[ ] Model thắng baseline ổn định trên nhiều OOF folds.
+[ ] Improvement không chỉ nằm ở một period.
+[ ] Confidence interval không quá rộng.
+[ ] Có economic edge sau fee/slippage.
+
+
+====================================================================
+8. [HIGH] BACKTEST VẪN CHƯA CÓ PORTFOLIO MARK-TO-MARKET CHUẨN
+====================================================================
+
+Điểm đã sửa đúng:
+    Signal(T)
+        ->
+    Entry Open(T+1)
+
+và:
+    fixed forecast horizon
+
+Tuy nhiên hiện vẫn còn:
+    pseudo_sharpe_ratio
+
+tính từ trade returns.
+
+Ngoài ra equity chưa chắc mark-to-market position mỗi ngày.
+
+Vấn đề:
+Một trade có thể:
+    entry 100
+    giảm còn 75
+    hồi lên 105
+    exit
+
+Nếu chỉ update khi đóng trade,
+backtest có thể không ghi nhận drawdown -25% đầy đủ.
+
+Vì sao nguy hiểm:
+- Sharpe bị hiểu sai.
+- Max Drawdown bị đánh giá thấp.
+- Risk profile quá lạc quan.
+- Không thể quyết định production từ metric này.
+
+Cách sửa:
+Tạo equity curve theo từng timestamp:
+
+    cash_t
+    position_value_t
+    unrealized_pnl_t
+    realized_pnl_t
+    equity_t
+    return_t
+    exposure_t
 
 Sau đó tính:
-
     CAGR
     annualized volatility
     Sharpe
@@ -765,374 +565,137 @@ Sau đó tính:
     turnover
     exposure
 
-Nếu crypto daily:
-annualization factor thường:
-    sqrt(365)
-
-nếu dùng daily portfolio returns.
+Tiêu chí DONE:
+[ ] Equity mark-to-market mỗi candle/day.
+[ ] MDD tính trên full equity curve.
+[ ] Sharpe tính từ portfolio return series.
+[ ] Fee + slippage đã tính.
 
 
 ====================================================================
-13. [MEDIUM] MAX DRAWDOWN CHƯA MARK-TO-MARKET ĐẦY ĐỦ
+9. [HIGH] BACKTEST RESULT CHƯA ĐƯỢC LOG ĐẦY ĐỦ TRÊN REPO
 ====================================================================
 
-Nếu equity chỉ thay đổi khi trade đóng,
-thì drawdown trong lúc position đang mở có thể bị bỏ qua.
+Hiện GitHub log có dòng chạy backtest,
+nhưng chưa thấy đầy đủ:
 
-Ví dụ:
+    net return
+    baseline return
+    total trades
+    win rate
+    max drawdown
+    turnover
+    exposure
+    Sharpe
 
-Entry:
-    100
+Artifacts/backtests lại bị .gitignore.
 
-Trong trade:
-    giá giảm còn 75
-
-Sau đó:
-    hồi về 105 và exit
-
-Nếu chỉ update equity khi exit,
-backtest có thể ghi:
-    +5%
-
-nhưng bỏ qua:
-    -25% intratrade drawdown
-
-Đây là vấn đề nghiêm trọng khi đánh giá risk.
+Vấn đề:
+Không thể audit model có economic edge hay không chỉ từ GitHub.
 
 Cách sửa:
-Mark-to-market position tại từng timestamp:
+Log summary sau mỗi backtest:
 
-    position_value_t
-    unrealized_pnl_t
-    equity_t
+    Model
+    Dataset version
+    Threshold
+    Return
+    Benchmark Return
+    MDD
+    Sharpe
+    Trades
+    Win Rate
+    Turnover
 
-Max Drawdown phải tính trên equity curve này.
+Hoặc push một file summary nhỏ:
 
+    reports/quant_latest_metrics.json
+    reports/quant_latest_backtest.json
 
-====================================================================
-14. [MEDIUM] CẦN THÊM BASELINE PROBABILITY, KHÔNG CHỈ BASELINE CLASS
-====================================================================
+Không cần push toàn bộ model binaries.
 
-Hiện nên có ít nhất:
-
-1. Majority-class baseline
-2. Uniform probability baseline:
-       [1/3, 1/3, 1/3]
-3. Historical-prior baseline:
-       class probability theo training fold
-4. Simple momentum baseline
-
-So:
-
-    Accuracy
-    Balanced Accuracy
-    Macro F1
-    Log Loss
-    Brier
-    Backtest
-
-Đặc biệt:
-Log Loss model phải tốt hơn meaningful probability baseline
-mới chứng minh probability output có giá trị.
+Tiêu chí DONE:
+[ ] Repo có audit summary cho mỗi batch train.
+[ ] Có model/config/data version.
+[ ] Backtest result reproducible.
 
 
 ====================================================================
-15. [MEDIUM] CẦN EVALUATION THEO MARKET REGIME
+10. [HIGH] KHÔNG NÊN LÀM REALTIME / EXPERT NEWS TRƯỚC KHI XỬ LÝ CÁC MỤC TRÊN
 ====================================================================
 
-Một metric toàn holdout có thể che việc model chỉ tốt trong một regime.
+Hiện tại pipeline đã tốt hơn rất nhiều,
+nhưng predictive edge vẫn còn yếu.
 
-Nên chia:
+Nếu làm Realtime ngay:
+- sẽ production hóa một model chưa đủ robust.
 
-Trend regime:
-    Bull
-    Bear
-    Sideways
+Nếu làm Expert News ngay:
+- Fusion sau này sẽ phải kết hợp với Quant signal chưa ổn định.
 
-Volatility regime:
-    Low vol
-    Medium vol
-    High vol
+Thứ tự hợp lý:
 
-Sau đó báo cáo:
-
-    Balanced Accuracy
-    Macro F1
-    Brier
-    Log Loss
-    Bear recall
-    Bull recall
-    strategy return
-
-Điều này có thể giải thích bullish bias.
-
-Ví dụ:
-Nếu training window chủ yếu bull,
-model có thể học prior bullish mạnh.
+    1. Train->Tune embargo
+    2. Walk-Forward OOF threshold
+    3. Retire current final holdout
+    4. 8-10 asset dataset
+    5. Label experiment
+    6. Class-bias analysis
+    7. Probability baseline + confidence interval
+    8. Proper portfolio backtest
+    9. New final test / shadow test
+    10. Realtime
+    11. Expert News
+    12. Fusion
 
 
 ====================================================================
-16. [MEDIUM] LIGHTGBM NÊN ĐƯỢC GIỮ LÀ BASELINE CHÍNH
+THỨ TỰ ƯU TIÊN NGẮN GỌN
 ====================================================================
 
-Hiện tại:
-LightGBM:
-    Macro F1 khoảng 0.34
-    class balance tốt hơn
+P0 - SỬA NGAY:
+[ ] Embargo Train Only -> Tune
+[ ] Walk-Forward OOF threshold
+[ ] Ngừng dùng current holdout làm final test
 
-CatBoost:
-    Balanced Accuracy hơi cao hơn
-    nhưng bias BULLISH mạnh hơn
+P1 - TRƯỚC KHI TUNING MODEL:
+[ ] Dataset thật sự 8-10 coin
+[ ] Label A/B/C experiment
+[ ] Class weight/bullish bias ablation
 
-XGBoost:
-    BULLISH bias mạnh nhất
-    Macro F1 thấp hơn
-
-Khuyến nghị:
-Các experiment tiếp theo chỉ dùng LightGBM trước.
-
-Lý do:
-Nếu thay đồng thời:
-    label
-    feature
-    model
-    dataset
-
-sẽ không biết improvement đến từ đâu.
-
-Quy trình tốt:
-
-    LightGBM fixed
-         |
-         +-- Label A
-         +-- Label B
-         +-- Label C
-
-chọn label tốt.
-
-Sau đó:
-
-    best label
-         |
-         +-- raw OHLCV ON
-         +-- raw OHLCV OFF
-
-sau đó:
-
-    best setup
-         |
-         +-- 5 assets
-         +-- 8-10 assets
-
-Cuối cùng mới benchmark lại:
-    LightGBM
-    XGBoost
-    CatBoost
+P2 - TRƯỚC REALTIME:
+[ ] Baseline probability + bootstrap CI
+[ ] Mark-to-market portfolio backtest
+[ ] Backtest summary được log rõ
+[ ] New unseen final test / shadow test
 
 
 ====================================================================
-17. [LOW] LOGISTIC REGRESSION SHAP
+KẾT LUẬN
 ====================================================================
 
-Nếu vẫn còn dùng:
+Các lỗi nguy cấp nhất hiện nay KHÔNG còn là argmax hay history_years.
 
-    TreeExplainer
+Ba vấn đề quan trọng nhất hiện tại là:
 
-với sklearn Pipeline,
-SHAP có thể fail.
+1. TRAIN -> TUNE vẫn chưa embargo theo 5-day label horizon.
 
-Không ảnh hưởng prediction.
+2. Threshold tuning chưa dùng Walk-Forward OOF thật sự,
+   vẫn phụ thuộc một tune window nhỏ.
 
-Cách sửa:
-- LinearExplainer
-- generic shap.Explainer
-- hoặc coefficient report
+3. Current holdout đã bị xem quá nhiều lần,
+   nên không còn là final test đáng tin.
 
-Không cần ưu tiên trước.
+Sau khi sửa 3 mục trên,
+việc quan trọng tiếp theo là:
 
+    8-10 coin dataset
+        ->
+    label redesign
+        ->
+    bullish-bias ablation
+        ->
+    proper backtest
 
-====================================================================
-18. NHỮNG PHẦN ĐÃ SỬA ĐÚNG - KHÔNG CẦN QUAY LẠI
-====================================================================
-
-A. Classification đã dùng:
-
-    argmax(y_prob)
-
-thay vì threshold 0.50.
-
-Đây là sửa đúng.
-
-
-B. Embargo đã chuyển về logic theo thời gian / horizon.
-
-Đây là sửa đúng.
-
-
-C. Class weight không còn được precompute từ full Gold dataset.
-
-Đây là sửa đúng.
-
-
-D. Backtest đã dùng:
-
-    Signal(T)
-       ->
-    Entry Open(T+1)
-
-Đây là sửa đúng.
-
-
-E. Fixed forecast horizon trading đã được đưa vào.
-
-Đây là sửa đúng.
-
-
-F. Threshold range đã được mở xuống 0.34.
-
-Ý tưởng đúng,
-nhưng threshold tuning vẫn cần sửa thành OOF thật sự.
-
-
-====================================================================
-19. THỨ TỰ SỬA KHUYẾN NGHỊ
-====================================================================
-
-PHASE 1 - SỬA BUG / VALIDATION TRƯỚC
-
-[1] True OOF threshold tuning.
-
-[2] Sửa history_years config path:
-        config["data"]["history_years"]
-
-[3] Truyền forecast_steps đúng vào backtest.
-
-[4] Kiểm tra prediction/class distribution mỗi fold.
-
-
-PHASE 2 - DATA / LABEL
-
-[5] Cho DatasetBuilder sử dụng thật sự 8-10 assets.
-
-[6] Giữ LightGBM cố định.
-
-[7] Test 3 label:
-        A: return_5d / vol_1d
-        B: return_5d / (vol_1d * sqrt(5))
-        C: return_5d / historical_vol_5d
-
-[8] So OOF:
-        Log Loss
-        Brier
-        Macro F1
-        Balanced Accuracy
-
-[9] Kiểm tra class balance theo label.
-
-
-PHASE 3 - FEATURES
-
-[10] Raw OHLCV ON/OFF ablation.
-
-[11] Class weight ON/OFF ablation.
-
-[12] Feature-group ablation.
-
-[13] Regime evaluation.
-
-
-PHASE 4 - BACKTEST
-
-[14] Build mark-to-market equity curve.
-
-[15] Sharpe thật.
-
-[16] Max Drawdown thật.
-
-[17] Baselines:
-        Buy & Hold
-        Equal Weight
-        Momentum
-        Uniform/no-skill probability
-
-
-PHASE 5 - SAU KHI SIGNAL ĐÃ RÕ
-
-[18] Probability calibration.
-
-[19] Trading threshold optimization.
-
-[20] Shadow realtime.
-
-[21] Expert News.
-
-[22] Fusion Expert.
-
-
-====================================================================
-20. CHECKLIST TRƯỚC KHI TRAIN LẠI
-====================================================================
-
-[ ] OOF probabilities được sinh từ model chưa train trên sample validation đó.
-[ ] Threshold chỉ tune bằng OOF.
-[ ] Holdout không tham gia threshold tuning.
-[ ] history_years đọc đúng config path.
-[ ] forecast_steps truyền đúng vào backtest.
-[ ] DatasetBuilder thực sự dùng số coin mong muốn.
-[ ] In true class distribution.
-[ ] In prediction class distribution.
-[ ] In confusion matrix.
-[ ] In Accuracy.
-[ ] In Balanced Accuracy.
-[ ] In Macro F1.
-[ ] In Log Loss.
-[ ] In Brier.
-[ ] Lưu model/config/data version.
-
-
-====================================================================
-21. KẾT LUẬN HIỆN TẠI
-====================================================================
-
-Pipeline hiện đã tốt hơn đáng kể so với bản trước.
-
-Macro F1 tăng mạnh sau khi sửa argmax,
-chứng minh lỗi evaluation trước đó đã được xử lý đúng.
-
-Tuy nhiên kết quả hiện tại:
-
-    Balanced Accuracy khoảng 33-36%
-    Macro F1 khoảng 0.26-0.34
-    Log Loss khoảng 1.098-1.103
-    Brier khoảng 0.222-0.223
-
-cho thấy model hiện vẫn chỉ nhỉnh hơn no-skill rất ít.
-
-Điều này có nghĩa:
-- Không còn nên đổ lỗi chính cho classification evaluation.
-- Nút thắt tiếp theo nhiều khả năng nằm ở:
-      label design
-      asset universe
-      feature signal
-      market regime
-      probability calibration
-
-Ưu tiên quan trọng nhất hiện nay:
-
-    TRUE OOF THRESHOLD
-            ->
-    LABEL EXPERIMENT
-            ->
-    8-10 ASSET DATASET
-            ->
-    FEATURE ABLATION
-            ->
-    REALISTIC PORTFOLIO BACKTEST
-
-Chưa nên ưu tiên:
-    Transformer
-    LSTM
-    Realtime production
-    Expert News
-
-trước khi Quant chứng minh được signal tốt hơn no-skill baseline một cách ổn định.
+Chỉ khi model vượt no-skill baseline ổn định qua OOF + unseen test
+mới nên chuyển sang Realtime hoặc Expert News.

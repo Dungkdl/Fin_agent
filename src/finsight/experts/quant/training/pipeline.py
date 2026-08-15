@@ -79,43 +79,40 @@ class TrainingPipeline:
             df_train_val = df.copy()
             df_holdout = pd.DataFrame()
             
-        # 2. Tách tập Train/Val thành Train Only (80%) và Tune (20%) để OOS Threshold Tuning
-        logger.info("Tách tập OOS Validation để dò Threshold...")
-        tune_start_time = df_train_val["close_time"].max() - pd.DateOffset(months=max(1, int(self.min_train_months * 0.2)))
-        df_train_only = df_train_val[df_train_val["close_time"] < tune_start_time]
-        df_tune = df_train_val[df_train_val["close_time"] >= tune_start_time]
-        if df_tune.empty:
-            df_tune = df_train_val
-            df_train_only = df_train_val
-            
-        # 3. Huấn luyện mô hình (Kèm Optuna Tuning) trên tập Train Only
-        logger.info("Bắt đầu huấn luyện mô hình với Walk-Forward CV trên tập Train Only...")
-        self.model.train(df_train_only, cv_splitter=self.splitter)
+        # 2. Huấn luyện mô hình (Kèm Optuna Tuning) trên toàn bộ Train/Val
+        logger.info("Bắt đầu huấn luyện mô hình với Walk-Forward CV trên tập Train/Val...")
+        self.model.train(df_train_val, cv_splitter=self.splitter)
         
-        # 4. Tune Threshold trên out-of-sample
-        logger.info("Tuning Probability Threshold trên tập OOS Validation...")
-        y_prob_tune = self.model.predict_proba(df_tune)
-        y_true_tune = self.model._map_labels(df_tune["direction_label"]).values
+        # 3. Lấy Out-Of-Fold probabilities từ Walk-Forward CV để dò Threshold
+        logger.info("Sinh Walk-Forward Out-Of-Fold probabilities...")
+        y_prob_oof = self.model.cross_val_predict(df_train_val, cv_splitter=self.splitter)
+        
+        # 4. Tune Threshold trên OOF probabilities
+        logger.info("Tuning Probability Threshold trên tập OOF Validation...")
+        # Lọc ra các mẫu có dự đoán (không bị NaN do nằm ngoài các Validation folds)
+        valid_mask = ~np.isnan(y_prob_oof[:, 0])
+        y_prob_tune = y_prob_oof[valid_mask]
+        
+        y_true = self.model._map_labels(df_train_val["direction_label"]).values
+        y_true_tune = y_true[valid_mask]
         y_true_binary = (y_true_tune == 2).astype(int)
         
         from sklearn.metrics import f1_score
         best_f1 = 0
         best_th = 0.50
-        for th in np.arange(0.34, 0.75, 0.02):
-            preds = (y_prob_tune[:, 2] >= th).astype(int)
-            f1 = f1_score(y_true_binary, preds, zero_division=0)
-            if f1 > best_f1:
-                best_f1 = f1
-                best_th = th
-                
-        logger.info(f"Đã Tune Threshold = {best_th:.2f} (OOS F1-BULLISH: {best_f1:.2f})")
+        
+        if len(y_prob_tune) > 0:
+            for th in np.arange(0.34, 0.75, 0.02):
+                preds = (y_prob_tune[:, 2] >= th).astype(int)
+                f1 = f1_score(y_true_binary, preds, zero_division=0)
+                if f1 > best_f1:
+                    best_f1 = f1
+                    best_th = th
+                    
+        logger.info(f"Đã Tune Threshold = {best_th:.2f} (OOS F1-BULLISH: {best_f1:.2f}) trên {len(y_prob_tune)} mẫu OOF.")
         if "backtest" not in self.config:
             self.config["backtest"] = {}
         self.config["backtest"]["probability_threshold"] = float(best_th)
-        
-        # 5. Retrain Final Model trên toàn bộ Train/Val (Không chạy lại Optuna)
-        logger.info("Retraining Final Model trên toàn bộ Train/Val...")
-        self.model.train(df_train_val, cv_splitter=None)
         
         # 6. Lưu mô hình
         model_dir = f"artifacts/models/crypto/{self.config.get('model_name', 'default_model')}/v1"

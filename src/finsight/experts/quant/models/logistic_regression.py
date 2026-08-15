@@ -132,6 +132,34 @@ class LogisticRegressionQuantModel(BaseQuantModel):
         best_params.update(study.best_params)
         return best_params
 
+    def cross_val_predict(self, df_train: pd.DataFrame, cv_splitter) -> np.ndarray:
+        logger.info("Sinh Walk-Forward Out-Of-Fold probabilities cho Logistic Regression...")
+        y_train = self._map_labels(df_train[self.target])
+        w_train = df_train[self.weight_col].values if self.weight_col in df_train.columns else None
+        
+        preprocessor = self._build_sklearn_pipeline(df_train)
+        oof_preds = np.full((len(df_train), 3), np.nan)
+        
+        for train_idx, val_idx in cv_splitter.split(df_train):
+            X_tr, y_tr = df_train.iloc[train_idx][self.features], y_train.iloc[train_idx]
+            X_va = df_train.iloc[val_idx][self.features]
+            
+            w_tr = w_train[train_idx] if w_train is not None else None
+            
+            clf = LogisticRegression(**self.params)
+            pipeline = Pipeline(steps=[("preprocessor", preprocessor), ("classifier", clf)])
+            
+            fit_params = {}
+            if w_tr is not None:
+                fit_params["classifier__sample_weight"] = w_tr
+                
+            pipeline.fit(X_tr, y_tr, **fit_params)
+            
+            preds = pipeline.predict_proba(X_va)
+            oof_preds[val_idx] = preds
+            
+        return oof_preds
+
     def predict_proba(self, df_test: pd.DataFrame) -> np.ndarray:
         if self.model is None:
             raise ValueError("Model is not trained yet!")
