@@ -99,11 +99,18 @@ finsight quant build-dataset --config configs/quant_1d_5d.yaml
 ### Giai đoạn 4: Huấn luyện Mô hình & Tuning (Model Training) 🆕
 Đưa file dữ liệu `Gold` vào huấn luyện. Hệ thống tự động sử dụng **Walk-Forward Cross Validation** kết hợp với **Optuna** để tìm siêu tham số tốt nhất. Hỗ trợ **Model Registry** (LightGBM, XGBoost, CatBoost, Logistic Regression).
 
+Hệ thống có chế độ chạy chuyên nghiệp thông qua việc tách cấu hình:
+- Bạn có thể chạy từng Model riêng biệt:
 ```bash
-# Bắt đầu huấn luyện AI (Auto-Tuning với Optuna + Backtest + SHAP)
-finsight quant train --config configs/quant_1d_5d.yaml
+finsight quant train --config configs/quant_1d_5d_xgb.yaml
 ```
-Kết quả của Phase 4 là mô hình AI hoàn chỉnh, báo cáo `metrics.json` và diễn giải `shap_importance.json` được tự động lưu tại `artifacts/models/crypto/crypto_quant_1d_5d/v1/`.
+
+- **HOẶC** chạy hàng loạt (Batch Training) cả 4 Model cùng lúc để so sánh:
+```bash
+finsight quant train-all --dir configs --pattern "quant_1d_5d_*.yaml"
+```
+
+Kết quả của Phase 4 là mô hình AI hoàn chỉnh, báo cáo `metrics.json` và diễn giải `shap_importance.json` được tự động lưu tại `artifacts/models/crypto/<model_name>/v1/`.
 
 ---
 

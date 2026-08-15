@@ -58,7 +58,7 @@ def evaluate_classification(y_true: np.ndarray, y_pred: np.ndarray, y_prob: np.n
 
 def evaluate_slices(df: pd.DataFrame, y_true: np.ndarray, y_pred: np.ndarray, y_prob: np.ndarray) -> dict:
     """
-    Phân rã (slice) metrics theo symbol, regime, month.
+    Phân rã (slice) metrics theo symbol, regime
     df là DataFrame test gốc có chứa các cột siêu dữ liệu.
     """
     slices_metrics = {

@@ -1,0 +1,43 @@
+model_name: crypto_quant_1d_5d_xgb
+asset_type: crypto
+exchange: binance
+market_type: spot
+input_interval: 1d
+forecast_horizon: 5d
+forecast_steps: 5
+universe:
+  name: crypto_spot_usdt_v1
+  min_symbols: 8
+  max_symbols: 12
+  required_symbols:
+  - BTCUSDT
+  - ETHUSDT
+data:
+  history_years: 3
+  source: hybrid
+  use_monthly_zip: true
+  use_rest_incremental: true
+  validate_checksum: true
+features:
+  version: crypto_quant_features_v1
+labels:
+  type: volatility_adjusted_direction
+  positive_threshold: 0.5
+  negative_threshold: -0.5
+  volatility_window: 48
+validation:
+  type: expanding_walk_forward
+  min_train_months: 12
+  validation_months: 3
+  step_months: 3
+  final_holdout_months: 3
+model:
+  type: xgboost
+  objective: multiclass
+  random_seed: 42
+backtest:
+  spot_safe_mode: true
+  probability_threshold: 0.55
+  fee_bps: 10
+  slippage_bps: 5
+dataset_name: crypto_quant_1d_5d
