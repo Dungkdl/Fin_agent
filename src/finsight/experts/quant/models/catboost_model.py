@@ -141,7 +141,7 @@ class CatBoostQuantModel(BaseQuantModel):
         # Đồng bộ Boosting Rounds
         best_iteration = study.best_trial.user_attrs.get("best_iteration", None)
         if best_iteration is not None:
-            best_params["iterations"] = best_iteration
+            best_params["iterations"] = best_iteration + 1
         
         if "early_stopping_rounds" in best_params:
             best_params["early_stopping_rounds"] = None
