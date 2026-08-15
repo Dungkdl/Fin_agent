@@ -88,23 +88,29 @@ class TrainingPipeline:
         logger.info(f"Lưu mô hình tại {model_dir}")
         self.model.save(model_dir)
         
-        # 4. Tune Threshold trên Train/Val (Không dùng Holdout)
-        logger.info("Tuning Probability Threshold trên tập Train/Val...")
-        y_prob_train = self.model.predict_proba(df_train_val)
-        y_true_train = self.model._map_labels(df_train_val["direction_label"]).values
-        y_true_binary = (y_true_train == 2).astype(int)
+        # 4. Tune Threshold trên out-of-sample (Dùng 20% dữ liệu cuối của df_train_val làm validation cho threshold)
+        logger.info("Tuning Probability Threshold trên tập OOS Validation...")
+        # Tạo tập holdout nhỏ từ train_val (VD: 20% thời gian cuối hoặc tối thiểu 1 tháng)
+        tune_start_time = df_train_val["close_time"].max() - pd.DateOffset(months=max(1, int(self.min_train_months * 0.2)))
+        df_tune = df_train_val[df_train_val["close_time"] >= tune_start_time]
+        if df_tune.empty:
+            df_tune = df_train_val # fallback nếu data quá ngắn
+
+        y_prob_tune = self.model.predict_proba(df_tune)
+        y_true_tune = self.model._map_labels(df_tune["direction_label"]).values
+        y_true_binary = (y_true_tune == 2).astype(int)
         
         from sklearn.metrics import f1_score
         best_f1 = 0
         best_th = 0.50
-        for th in np.arange(0.50, 0.75, 0.02):
-            preds = (y_prob_train[:, 2] >= th).astype(int)
+        for th in np.arange(0.34, 0.75, 0.02):
+            preds = (y_prob_tune[:, 2] >= th).astype(int)
             f1 = f1_score(y_true_binary, preds, zero_division=0)
             if f1 > best_f1:
                 best_f1 = f1
                 best_th = th
                 
-        logger.info(f"Đã Tune Threshold = {best_th:.2f} (Train/Val F1-BULLISH: {best_f1:.2f})")
+        logger.info(f"Đã Tune Threshold = {best_th:.2f} (OOS F1-BULLISH: {best_f1:.2f})")
         
         if "backtest" not in self.config:
             self.config["backtest"] = {}
@@ -119,16 +125,20 @@ class TrainingPipeline:
             
             logger.info("Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...")
             y_prob = self.model.predict_proba(df_holdout)
-            y_pred = np.argmax(y_prob, axis=1)
-            # Áp dụng custom threshold cho Bullish (nếu lớn hơn best_th thì là 2, v.v...)
-            y_pred = np.where(y_prob[:, 2] >= best_th, 2, np.where(y_prob[:, 0] >= best_th, 0, 1))
+            
+            # Classification Evaluation MUST use argmax, strictly separated from Trading Threshold
+            y_pred_class = np.argmax(y_prob, axis=1)
             
             y_true = self.model._map_labels(df_holdout["direction_label"]).values
             
-            metrics = evaluate_classification(y_true, y_pred, y_prob)
-            slices = evaluate_slices(df_holdout, y_true, y_pred, y_prob)
+            metrics = evaluate_classification(y_true, y_pred_class, y_prob)
+            slices = evaluate_slices(df_holdout, y_true, y_pred_class, y_prob)
             
-            logger.info(f"Accuracy (Holdout): {metrics['balanced_accuracy']:.2%} | F1: {metrics['macro_f1']:.2f}")
+            logger.info(f"Balanced Acc (Holdout): {metrics['balanced_accuracy']:.2%} | Macro F1: {metrics['macro_f1']:.2f}")
+            logger.info(f"Log Loss: {metrics['log_loss']:.3f} | Brier Score: {metrics['brier_score']:.3f}")
+            logger.info(f"Precision: {metrics['per_class_precision']}")
+            logger.info(f"Recall: {metrics['per_class_recall']}")
+            logger.info(f"Confusion Matrix:\n{np.array(metrics['confusion_matrix'])}")
             
             logger.info("Chạy Spot-safe Backtest Simulation...")
             # Gắn xác suất vào DF để chạy giả lập

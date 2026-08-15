@@ -1,567 +1,489 @@
 FIN_AGENT - QUANT_EXPERT
-DANH SÁCH LỖI / ĐIỂM CẦN SỬA TRƯỚC KHI LÀM REALTIME HOẶC EXPERT_NEWS
-====================================================================
+TỔNG HỢP CÁC VẤN ĐỀ SAU KHI TRAIN LẠI MODEL
+============================================================
 
 Mục tiêu:
-- Làm Quant Expert v1.1 sạch hơn về leakage.
-- Backtest phản ánh gần với live trading hơn.
-- Đảm bảo metric hiện tại thực sự đáng tin trước khi mở rộng sang Realtime / Expert News.
-- Không ưu tiên đổi sang LSTM/Transformer ở giai đoạn này.
+- Giải thích vì sao metric hiện tại đang thấp.
+- Phân biệt lỗi evaluation với model thực sự yếu.
+- Chỉ ra thứ tự cần sửa trước khi tiếp tục Realtime hoặc Expert News.
+- Tránh tuning thêm model khi pipeline đánh giá vẫn còn sai.
 
-Quy ước mức độ:
-[CRITICAL]  Có thể làm validation/backtest sai đáng kể.
-[HIGH]      Không nhất thiết làm model học sai, nhưng có thể làm kết quả đánh giá sai hoặc chiến lược lệch mục tiêu.
-[MEDIUM]    Nên sửa để pipeline sạch, ổn định và dễ production.
-[OPTIONAL]  Cải tiến nghiên cứu, chưa phải lỗi bắt buộc.
+Kết quả train hiện tại:
+------------------------------------------------------------
+LightGBM:
+- Balanced Accuracy khoảng 33.05%
+- Macro F1 khoảng 0.19
 
+XGBoost:
+- Balanced Accuracy khoảng 35.01%
+- Macro F1 khoảng 0.18
 
-====================================================================
-1. [CRITICAL] EMBARGO TRONG WALK-FORWARD ĐANG TÍNH THEO SỐ DÒNG THAY VÌ THỜI GIAN
-====================================================================
+CatBoost:
+- Balanced Accuracy khoảng 33.33%
+- Macro F1 khoảng 0.13
 
-File liên quan:
-src/finsight/experts/quant/models/splitters/walk_forward.py
+Logistic Regression:
+- Balanced Accuracy khoảng 32.76%
+- Macro F1 khoảng 0.13
 
-Hiện trạng:
-Pipeline dùng forecast horizon khoảng 5 bước / 5 ngày.
-Walk-forward splitter có logic kiểu:
-
-    first_val_idx = val_idx[0]
-    train_end_idx = first_val_idx - embargo_steps
-
-với:
-
-    embargo_steps = 5
-
-Vấn đề:
-Dataset sau khi gộp nhiều symbol được sort theo close_time.
-
-Ví dụ có 5 coin:
-
-    2026-01-01 BTC
-    2026-01-01 ETH
-    2026-01-01 BNB
-    2026-01-01 SOL
-    2026-01-01 XRP
-    2026-01-02 BTC
-    ...
-
-Khi trừ 5 "rows", ta có thể chỉ lùi khoảng 1 ngày chứ không phải 5 ngày.
-
-Trong khi label tại thời điểm t có sử dụng giá ở t + 5 ngày.
-
-Như vậy các sample train nằm sát biên validation vẫn có khả năng có label dùng dữ liệu thuộc thời gian validation.
-
-Đây là dạng target leakage giữa train và validation.
-
-Vì sao nguy hiểm:
-- Validation score có thể cao hơn thực tế.
-- Optuna có thể chọn hyperparameter dựa trên thông tin tương lai bị lọt vào train.
-- Khi chuyển sang live, hiệu năng có thể giảm đáng kể.
-- Đây là lỗi validation quan trọng hơn việc thay model.
-
-Cách sửa khuyến nghị:
-Không purge theo row index.
-Purge theo timestamp hoặc label_end_time.
-
-Cách tốt nhất:
-
-    prediction_time = close_time
-    label_end_time = close_time + forecast_horizon
-
-Khi validation bắt đầu tại:
-
-    val_start
-
-thì chỉ cho phép train sample có:
-
-    label_end_time < val_start
-
-Pseudo-code:
-
-    train_mask = df["label_end_time"] < val_start
-    val_mask = (
-        (df["close_time"] >= val_start)
-        & (df["close_time"] < val_end)
-    )
-
-Nếu chưa có label_end_time thì có thể dùng:
-
-    train_end_time = val_start - pd.Timedelta(days=forecast_steps)
-
-nhưng label_end_time vẫn là cách tổng quát và an toàn hơn.
-
-Lưu ý:
-Nếu sau này timeframe đổi từ 1d sang 4h, không nên dùng hard-code "days=5".
-Nên convert horizon dựa trên timeframe thực tế.
-
-Tiêu chí kiểm tra sau sửa:
-- Không có train sample nào có label_end_time >= validation_start.
-- Viết unit test kiểm tra điều này cho dataset nhiều symbol.
-- Test cả 1d/5d và một cấu hình khác như 4h/24h nếu pipeline hỗ trợ.
+Nhìn bề ngoài, cả 4 model đều đang quanh mức 33% của bài toán 3 lớp.
+Tuy nhiên hiện tại CHƯA THỂ kết luận model không có predictive edge,
+vì pipeline evaluation vẫn còn một lỗi quan trọng làm metric có thể thấp giả tạo.
 
 
-====================================================================
-2. [CRITICAL] BACKTEST DÙNG CLOSE(t) ĐỂ RA SIGNAL VÀ CŨNG MUA Ở CLOSE(t)
-====================================================================
+============================================================
+1. [CRITICAL] CLASSIFICATION EVALUATION ĐANG DÙNG TRADING THRESHOLD
+============================================================
 
 File liên quan:
-src/finsight/experts/quant/training/backtest.py
+src/finsight/experts/quant/training/pipeline.py
 
 Hiện trạng:
-Model sử dụng feature của candle t.
-Feature có dữ liệu OHLCV của candle đã đóng tại t.
+Model dự đoán xác suất 3 lớp:
 
-Sau đó backtest có logic gần như:
+    y_prob = model.predict_proba(...)
 
-    price = row["close"]
+Ban đầu pipeline có thể lấy:
 
-    if p_bull >= threshold:
-        entry_price = price * (1 + slippage)
+    y_pred = np.argmax(y_prob, axis=1)
 
-Vấn đề:
-Chỉ sau khi candle t đóng thì ta mới biết đầy đủ close(t), high(t), low(t), volume(t), indicator tại t...
+Đây là cách classification multiclass đúng.
 
-Sau đó mới có thể:
-1. tính feature,
-2. chạy inference,
-3. gửi lệnh.
+Nhưng sau đó lại thay y_pred bằng logic kiểu:
 
-Không thể vừa dùng close(t) để tạo signal rồi giả sử luôn khớp lệnh tại chính close(t) một cách hoàn hảo.
+    if P(BULLISH) >= threshold:
+        BULLISH
+    elif P(BEARISH) >= threshold:
+        BEARISH
+    else:
+        SIDEWAYS
 
-Đây là execution/look-ahead bias trong backtest.
-
-Vì sao nguy hiểm:
-- Giá entry đẹp hơn thực tế.
-- Backtest có thể overestimate return.
-- Slippage nhỏ không giải quyết hoàn toàn vấn đề thời điểm ra quyết định.
-- Live performance sẽ thường thấp hơn backtest.
-
-Cách sửa khuyến nghị:
-Chuẩn hóa timing:
-
-    Feature candle t
-        -> Signal tại cuối t
-        -> Execute tại open(t+1)
+với threshold khoảng 0.50.
 
 Ví dụ:
 
-    signal_time = close_time[t]
-    entry_price = open[t+1]
+    BEARISH   = 0.42
+    SIDEWAYS  = 0.31
+    BULLISH   = 0.27
 
-Sau đó áp dụng:
-- fee
-- slippage
-- spread nếu muốn
+Argmax đúng:
+    BEARISH
 
-Nếu không có open(t+1), có thể mô phỏng execution delayed price,
-nhưng open(t+1) là benchmark sạch và dễ giải thích nhất.
+Nhưng code threshold hiện tại:
+    BULLISH < 0.5
+    BEARISH < 0.5
 
-Tiêu chí kiểm tra sau sửa:
-- Không trade nào sử dụng giá trước hoặc bằng thời điểm mà signal vừa mới được tạo nếu giá đó chưa thể biết khi ra lệnh.
-- Unit test:
-    signal index = t
-    execution index >= t + 1
+=> SIDEWAYS
 
+Ví dụ khác:
 
-====================================================================
-3. [HIGH] TARGET DỰ BÁO 5 NGÀY NHƯNG LOGIC GIỮ LỆNH KHÔNG BÁM 5 NGÀY
-====================================================================
+    BEARISH   = 0.31
+    SIDEWAYS  = 0.34
+    BULLISH   = 0.35
 
-File liên quan:
-- Label builder
-- backtest.py
-- config quant_1d_5d.yaml
+Argmax:
+    BULLISH
 
-Hiện trạng:
-Target trả lời gần giống:
+Nhưng threshold:
+    BULLISH < 0.5
+    BEARISH < 0.5
 
-    "Sau 5 ngày thị trường bullish / sideways / bearish?"
+=> SIDEWAYS
 
-Nhưng strategy lại có thể:
+Vì sao đây là lỗi rất lớn:
+Bài toán của bạn là 3-class classification.
 
-    P(BULL) >= threshold -> BUY
-    giữ position cho tới khi có tín hiệu thoát / bearish
+Trong bài toán 3 lớp, xác suất tự nhiên có thể xoay quanh:
 
-Vì thế trade có thể giữ:
-- 2 ngày
-- 4 ngày
-- 10 ngày
-- 20 ngày
-...
+    0.33 / 0.33 / 0.33
 
-Vấn đề:
-Prediction horizon và trading horizon không đồng nhất.
+Không có lý do một class phải vượt 0.50 mới được xem là prediction.
 
-Model được đánh giá bằng một target, nhưng PnL lại được tạo bởi một policy khác.
+Threshold 0.50 phù hợp hơn với:
+- quyết định trading confidence,
+- hoặc binary classification,
 
-Vì sao nguy hiểm:
-Nếu chiến lược lời/lỗ, khó biết nguyên nhân là:
-- model dự báo 5 ngày tốt,
-hay
-- exit policy tình cờ tốt/xấu.
+chứ không phải cách tính class prediction cho multiclass evaluation.
 
-Điều này làm kết quả nghiên cứu khó diễn giải.
+Hậu quả:
+Rất nhiều prediction có class cao nhất đúng nhưng không vượt 0.50
+sẽ bị ép thành SIDEWAYS.
 
-Cách sửa khuyến nghị:
-Tạo benchmark strategy đầu tiên đúng với target:
-
-    Signal bullish ở t
-    -> Entry tại t+1
-    -> Hold đúng forecast_steps candles
-    -> Exit
-
-Ví dụ forecast_steps = 5:
-
-    enter at open(t+1)
-    exit sau 5 candles
-
-Sau đó mới tạo các strategy phụ:
-A. Fixed horizon
-B. Exit early nếu bearish
-C. Confidence-based exit
-D. Stop-loss/take-profit
-
-Luôn báo cáo A trước để kiểm tra đúng predictive edge của model.
-
-Tiêu chí kiểm tra sau sửa:
-Backtest report phải cho phép so sánh:
-
-    fixed_horizon_5d
-    signal_based_exit
-
-Nếu fixed_horizon không có edge nhưng signal-based có,
-cần phân tích riêng trading policy.
-
-
-====================================================================
-4. [HIGH] CLASS WEIGHT ĐƯỢC TÍNH TRÊN TOÀN DATASET TRƯỚC KHI CHIA FOLD
-====================================================================
-
-File liên quan:
-src/finsight/experts/quant/feature_engineering/weighting/class_weight.py
-và Dataset Builder / Training Pipeline.
-
-Hiện trạng:
-Class distribution được tính từ dataframe tương đối đầy đủ:
-
-    class_counts = df[label_col].value_counts()
-
-rồi tạo class_weight.
-
-Sau đó mới train/validation/holdout.
-
-Vấn đề:
-Thông tin về phân bố label của phần tương lai có thể ảnh hưởng đến trọng số của dữ liệu train.
-
-Đây là leakage nhỏ nhưng không sạch về mặt experimental design.
-
-Ví dụ:
-Nếu holdout tương lai có rất nhiều BEARISH,
-class weight được tính trên toàn dataset sẽ "biết trước" distribution đó.
-
-Vì sao nên sửa:
-- Walk-forward validation phải chỉ dùng thông tin có sẵn trong training fold.
-- Khi market regime thay đổi, class distribution tương lai là một thông tin thực sự chưa biết.
-- Làm sạch pipeline giúp metric đáng tin hơn.
+Điều này làm:
+- Macro F1 giảm mạnh
+- Balanced Accuracy giảm
+- Recall BULLISH/BEARISH giảm
+- Confusion matrix bị méo
 
 Cách sửa:
-Mỗi fold:
+Classification evaluation phải dùng:
 
-    train_df
-       -> compute class counts
-       -> compute class weights
-       -> train model
-
-Không lưu một class_weight cố định được tính từ full dataset để dùng cho tất cả fold.
-
-Holdout tuyệt đối không được tham gia tính weight.
-
-Tiêu chí kiểm tra:
-- Mỗi fold có weight riêng.
-- Weight được fit chỉ trên train_idx.
-- Validation/holdout chỉ sử dụng weight đã fit từ train nếu cần.
-
-
-====================================================================
-5. [HIGH] BACKTEST CHƯA CÓ PORTFOLIO EQUITY CURVE / SHARPE CHUẨN
-====================================================================
-
-File liên quan:
-src/finsight/experts/quant/training/backtest.py
-
-Hiện trạng:
-Có metric dạng "pseudo_sharpe_ratio" tính từ return của từng trade.
-
-Điều này hữu ích để debug nhưng không tương đương Sharpe ratio của một portfolio time series.
-
-Vấn đề:
-Trade returns không nhất thiết:
-- cách đều theo thời gian,
-- không overlap,
-- có cùng exposure,
-- có cùng capital allocation.
-
-Do đó:
-
-    mean(trade_returns) / std(trade_returns) * sqrt(n_trades)
-
-không thể được hiểu giống Sharpe chuẩn của daily portfolio returns.
-
-Vì sao quan trọng:
-Đây là project tài chính.
-Model có accuracy/F1 tốt chưa đủ.
-Quan trọng là risk-adjusted return sau chi phí.
-
-Cách sửa:
-Xây equity curve theo thời gian.
-
-Mỗi ngày/candle cần biết:
-
-    timestamp
-    cash
-    positions
-    portfolio_value
-    portfolio_return
-    exposure
-    turnover
+    y_pred = np.argmax(y_prob, axis=1)
 
 Sau đó tính:
 
-    Total Return
-    CAGR
-    Annualized Volatility
-    Sharpe
-    Sortino
-    Max Drawdown
-    Calmar Ratio
-    Win Rate
-    Profit Factor
-    Turnover
-    Average Holding Period
-    Exposure
+    Accuracy
+    Balanced Accuracy
+    Macro F1
+    Weighted F1
+    Precision
+    Recall
+    Confusion Matrix
+    Log Loss
+    Brier Score
 
-Sharpe ví dụ với daily returns:
+Trading threshold phải tách thành một nhánh riêng.
 
-    sharpe = mean(daily_return) / std(daily_return) * sqrt(365)
+Kiến trúc đúng:
 
-Nếu crypto giao dịch 365 ngày/năm.
-
-Lưu ý:
-Nếu dùng risk-free rate thì trừ risk-free return tương ứng.
-
-Tiêu chí kiểm tra:
-- Sharpe được tính trên portfolio return time series.
-- Có equity curve.
-- Có max drawdown dựa trên running peak.
+                    model probabilities
+                           |
+              -------------------------
+              |                       |
+       classification              trading
+        evaluation                 strategy
+              |                       |
+          ARGMAX                 threshold
+              |                       |
+        F1 / Accuracy           Buy / Sell / No trade
 
 
-====================================================================
-6. [HIGH] BACKTEST THIẾU BASELINE ĐỂ BIẾT MODEL CÓ THỰC SỰ TẠO EDGE
-====================================================================
+============================================================
+2. [CRITICAL] CATBOOST 33.33% CÓ DẤU HIỆU BỊ COLLAPSE VỀ SIDEWAYS
+============================================================
+
+Kết quả:
+CatBoost Balanced Accuracy khoảng 33.33%
+Macro F1 khoảng 0.13
+
+Đây là dấu hiệu đáng nghi.
+
+Nếu model bị post-processing thành gần như:
+
+    SIDEWAYS
+    SIDEWAYS
+    SIDEWAYS
+    SIDEWAYS
+    ...
+
+thì Balanced Accuracy của bài toán 3 class sẽ gần:
+
+    (Recall_BEAR + Recall_SIDEWAYS + Recall_BULL) / 3
+
+Nếu:
+    Recall_BEAR ≈ 0
+    Recall_SIDEWAYS ≈ 1
+    Recall_BULL ≈ 0
+
+thì:
+
+    Balanced Accuracy ≈ 1/3 = 33.33%
+
+Con số này khớp rất sát với CatBoost hiện tại.
+
+Điều này không chứng minh chắc chắn model tốt,
+nhưng chứng minh rằng metric hiện tại rất có thể đang bị logic threshold làm hỏng.
+
+Việc cần làm:
+Sau khi sửa argmax, bắt buộc in:
+- confusion matrix
+- support mỗi class
+- precision mỗi class
+- recall mỗi class
+- số prediction mỗi class
+
+Nếu prediction distribution trở nên cân bằng hơn,
+thì lỗi post-processing chính là nguyên nhân lớn.
+
+
+============================================================
+3. [CRITICAL] THRESHOLD TUNING ĐANG DÙNG IN-SAMPLE PREDICTION
+============================================================
 
 Hiện trạng:
-Đánh giá tập trung vào metric model và strategy của Quant.
+Pipeline train final model trên toàn bộ train + validation,
+sau đó lại predict chính dataset đó để chọn threshold.
+
+Logic gần giống:
+
+    model.train(df_train_val)
+
+    y_prob_train = model.predict_proba(df_train_val)
+
+    search best threshold
 
 Vấn đề:
-Một strategy có return dương chưa có nghĩa model có alpha.
+Model đã nhìn thấy chính các sample được dùng để tune threshold.
+
+Đây là in-sample optimization.
+
+Threshold có thể bị overfit.
+
+Cách đúng:
+Threshold phải tune từ OOF predictions.
 
 Ví dụ:
-Crypto bull market:
-    Buy & Hold BTC = +80%
-    Quant = +30%
 
-Quant có lời nhưng không chứng minh model tốt.
+Fold 1:
+    train -> validation prediction
 
-Cách sửa:
-Thêm baseline:
+Fold 2:
+    train -> validation prediction
 
-1. Buy & Hold BTC
-2. Equal Weight Universe
-3. Simple Momentum
-4. Majority-class / no-skill classifier
-5. Có thể thêm random signal để sanity check
+Fold 3:
+    train -> validation prediction
 
-So sánh:
+Ghép toàn bộ validation predictions lại:
 
-    Return
-    CAGR
-    Volatility
-    Sharpe
-    Max Drawdown
-    Turnover
-    Transaction cost
+    OOF probabilities
 
-Tiêu chí:
-Quant phải ít nhất chứng minh được một trong:
-- return tốt hơn với risk tương đương,
-- Sharpe tốt hơn,
-- drawdown thấp hơn,
-- hoặc tạo alpha trong những regime baseline yếu.
+Sau đó:
+    tune threshold trên OOF
+
+Cuối cùng:
+    freeze threshold
+
+Rồi mới:
+    train final model
+    evaluate untouched holdout
+
+Không dùng final holdout để chọn threshold.
 
 
-====================================================================
-7. [HIGH] PROBABILITY THRESHOLD 0.55 ĐANG CỐ ĐỊNH NHƯNG CHƯA CHỨNG MINH ĐƯỢC CALIBRATION
-====================================================================
+============================================================
+4. [HIGH] SEARCH RANGE CỦA TRADING THRESHOLD BẮT ĐẦU TỪ 0.50 LÀ QUÁ CAO
+============================================================
 
-File liên quan:
-configs/quant_1d_5d.yaml
-evaluation / training pipeline.
+Hiện tại threshold search khoảng:
 
-Hiện trạng:
+    0.50
+    0.52
+    0.54
+    ...
+    0.74
 
-    probability_threshold: 0.55
+Với bài toán 3-class,
+0.50 đã là confidence tương đối cao.
 
-Vấn đề:
-Classifier output 0.55 không đảm bảo sự kiện thực tế xảy ra 55%.
+Một model có thể có prediction:
 
-Tree model có thể:
-- overconfident
-- underconfident
-- khác calibration giữa các regime.
+    P(BULLISH) = 0.43
 
-Nếu threshold không được tune đúng cách,
-strategy có thể trade quá nhiều hoặc bỏ lỡ tín hiệu tốt.
+và đây vẫn có thể là một tín hiệu tốt nếu:
+    P(BEARISH) = 0.25
+    P(SIDEWAYS) = 0.32
 
-Cách sửa:
-Trên OOF validation predictions:
+Nếu chỉ test từ 0.50,
+nhiều signal tốt sẽ không bao giờ được xem xét.
 
-1. Tính:
-    - Log Loss
-    - Brier Score
-    - Reliability Curve
-    - Expected Calibration Error (ECE)
+Khuyến nghị:
+Test rộng hơn, ví dụ:
 
-2. Nếu cần, calibration:
-    - Platt / sigmoid
-    - Isotonic
-    - hoặc phương pháp calibration phù hợp multiclass
-
-3. Tune threshold chỉ trên validation/OOF:
-
-Ví dụ thử:
+    0.34
+    0.36
+    0.38
+    0.40
+    0.42
+    0.45
     0.50
     0.55
     0.60
-    0.65
-    0.70
-    ...
 
-Đánh giá:
-    precision
-    trade count
-    return
-    Sharpe
-    drawdown
-    turnover
+Nhưng threshold trading KHÔNG nên chọn chỉ bằng F1.
 
-4. Freeze threshold.
-5. Chỉ sau đó evaluate final holdout.
-
-Không được chọn threshold tốt nhất trên final holdout.
-
-Tiêu chí:
-- Threshold được chọn từ OOF/validation.
-- Holdout chỉ chạy đúng một lần với config đã freeze.
-
-
-====================================================================
-8. [MEDIUM] FEATURE LIST CÓ NGUY CƠ ĐƯA RAW ABSOLUTE PRICE VÀO MODEL
-====================================================================
-
-File liên quan:
-src/finsight/experts/quant/models/lightgbm_model.py
-
-Hiện trạng:
-Feature có xu hướng được chọn bằng cách:
-- lấy các column
-- loại một số exclude columns
-
-Cần kiểm tra liệu các cột raw sau có đang được đưa thẳng vào model:
-
-    open
-    high
-    low
-    close
-    volume
-
-Vấn đề:
-Trong multi-asset model:
-
-    BTC close ~ hàng chục nghìn USD
-    XRP close ~ vài USD
-
-Raw price vô tình trở thành identifier của coin.
-
-Model có thể học:
-
-    "close > X => gần như chắc BTC"
-
-thay vì học price dynamics.
-
-Raw volume cũng khác scale mạnh giữa symbol.
-
-Vì sao nguy hiểm:
-- Khả năng generalize sang asset mới kém.
-- Feature importance có thể bị đánh lừa.
-- Model học identity/regime của từng coin thay vì pattern thị trường.
-
-Cách sửa:
-Làm ablation test.
-
-Model A:
-    giữ raw OHLCV
-
-Model B:
-    bỏ raw absolute OHLCV
-
-Ưu tiên stationary / normalized features:
-
-    return_1d
-    return_5d
-    log_return
-    close / EMA20 - 1
-    close / SMA50 - 1
-    ATR / close
-    high / close - 1
-    low / close - 1
-    volume / rolling_mean(volume) - 1
-    rolling z-score
-    relative strength vs BTC
-    cross-sectional rank
-
-Nếu raw feature không giúp OOF/holdout,
-nên bỏ.
-
-Tiêu chí:
-- Có ablation report.
-- Không quyết định dựa chỉ trên train importance.
-
-
-====================================================================
-9. [MEDIUM] VOLATILITY-ADJUSTED LABEL NÊN KIỂM TRA LẠI HORIZON
-====================================================================
-
-File liên quan:
-src/finsight/experts/quant/feature_engineering/labels/direction.py
-
-Hiện trạng:
-Target khoảng 5-day future return.
-Normalization có thể đang dùng rolling volatility của daily returns.
-
-Dạng:
-
-    future_5d_return / daily_volatility
-
-Vấn đề:
-Numerator và denominator khác horizon.
-
-Không nhất thiết là "sai", nhưng scale của threshold khó diễn giải.
+Nên xem:
+- trade count
+- precision BULLISH
+- average future return
+- return
+- Sharpe
+- max drawdown
+- turnover
+- transaction cost
 
 Ví dụ:
-5-day return tự nhiên có variance lớn hơn 1-day return.
+Threshold cao hơn có thể ít trade nhưng chất lượng tốt hơn.
 
-Cách thử tốt hơn:
+
+============================================================
+5. [HIGH] LOG HIỆN GỌI BALANCED ACCURACY LÀ ACCURACY
+============================================================
+
+Hiện log đang có dạng:
+
+    Accuracy (Holdout): ...
+
+nhưng metric bên trong lại là:
+
+    balanced_accuracy_score(...)
+
+Hai metric này khác nhau.
+
+Accuracy:
+    số prediction đúng / tổng sample
+
+Balanced Accuracy:
+    trung bình recall của các class
+
+Trong class imbalance,
+hai con số có thể khác đáng kể.
+
+Cách sửa:
+Log riêng:
+
+    Accuracy
+    Balanced Accuracy
+    Macro F1
+    Weighted F1
+    Log Loss
+    Brier Score
+
+Không gọi Balanced Accuracy là Accuracy.
+
+
+============================================================
+6. [HIGH] CẦN THÊM CONFUSION MATRIX VÀ DISTRIBUTION CỦA PREDICTION
+============================================================
+
+Hiện tại chỉ nhìn Macro F1 và Balanced Accuracy chưa đủ.
+
+Cần in:
+
+True label distribution:
+    BEARISH
+    SIDEWAYS
+    BULLISH
+
+Prediction distribution:
+    BEARISH
+    SIDEWAYS
+    BULLISH
+
+Confusion matrix:
+
+                    Pred Bear   Pred Side   Pred Bull
+
+True Bear
+True Side
+True Bull
+
+Vì sao cần:
+Nếu model prediction gần như toàn SIDEWAYS,
+metric thấp là do class collapse.
+
+Nếu prediction phân bố hợp lý nhưng vẫn sai nhiều,
+lúc đó mới nói feature/label yếu.
+
+
+============================================================
+7. [HIGH] QUANT HIỆN VẪN TRAIN CHỦ YẾU TRÊN 5 COIN
+============================================================
+
+Repo có dữ liệu nhiều coin hơn, ví dụ:
+
+    BTC
+    ETH
+    BNB
+    SOL
+    XRP
+    ADA
+    DOGE
+    DOT
+    AVAX
+    LINK
+    ...
+
+Nhưng Dataset Builder hiện vẫn dựa vào:
+
+    required_symbols
+
+và config chính đang có khoảng:
+
+    BTCUSDT
+    ETHUSDT
+    BNBUSDT
+    SOLUSDT
+    XRPUSDT
+
+Tức là dù raw/silver data có nhiều coin,
+Quant dataset thực tế vẫn có thể chỉ dùng 5 coin.
+
+Dấu hiệu:
+Holdout khoảng 465 samples.
+
+Khoảng 3 tháng:
+    ~93 ngày
+
+93 ngày * 5 coin ≈ 465 samples
+
+Điều này khớp với việc Quant vẫn train 5 symbol.
+
+Vì sao nên sửa:
+Multi-asset model có nhiều asset hơn sẽ có:
+- cross-sectional variation tốt hơn
+- nhiều volatility profile hơn
+- nhiều relative strength pattern hơn
+- nhiều market regimes theo từng asset hơn
+
+Khuyến nghị trước mắt:
+Train 8-10 coin có dữ liệu đủ sạch.
+
+Ví dụ:
+    BTC
+    ETH
+    BNB
+    SOL
+    XRP
+    ADA
+    DOGE
+    DOT
+    AVAX
+    LINK
+
+Về lâu dài:
+Universe Builder
+    ->
+point-in-time universe
+    ->
+Dataset Builder
+
+
+============================================================
+8. [MEDIUM] LABEL 5 NGÀY HIỆN CÓ THỂ QUÁ NHIỄU
+============================================================
+
+Hiện target gần giống:
+
+    future_return_5d
+        /
+    rolling daily volatility
+
+Sau đó threshold:
+
+    normalized_return > +0.5 -> BULLISH
+    normalized_return < -0.5 -> BEARISH
+    else -> SIDEWAYS
+
+Vấn đề:
+Numerator là 5-day return,
+nhưng denominator là volatility 1-day.
+
+Ví dụ:
+daily volatility = 4%
+
+Threshold:
+    0.5 * 4% = 2%
+
+Tức:
+    +2% trong 5 ngày -> BULLISH
+    -2% trong 5 ngày -> BEARISH
+
+Với crypto,
+±2% trong 5 ngày có thể chỉ là noise.
+
+Điều này có thể làm label khó học.
+
+Khuyến nghị A/B test:
 
 Label A:
     future_5d_return / vol_1d
@@ -570,644 +492,367 @@ Label B:
     future_5d_return / (vol_1d * sqrt(5))
 
 Label C:
-    future_5d_return / rolling_std(historical_5d_returns)
-
-Sau đó so sánh:
-
-    class distribution
-    macro F1
-    log loss
-    Brier
-    precision BULLISH/BEARISH
-    backtest return
-    Sharpe
-    turnover
-
-Khuyến nghị:
-Không đổi ngay vì lý thuyết.
-Hãy chạy experiment/ablation và chọn theo OOF + holdout.
-
-Tiêu chí:
-Label tốt nên:
-- không quá mất cân bằng class,
-- ổn định qua regime,
-- có economic meaning,
-- tạo signal có edge sau fee.
-
-
-====================================================================
-10. [MEDIUM] UNIVERSE BUILDER VÀ DATASET BUILDER CẦN ĐƯỢC NỐI THÀNH POINT-IN-TIME UNIVERSE
-====================================================================
-
-File liên quan:
-configs/quant_1d_5d.yaml
-Dataset Builder
-Universe Builder
-
-Hiện trạng:
-Config có min_symbols/max_symbols nhưng Dataset Builder dường như vẫn dựa mạnh vào required_symbols, ví dụ:
-
-    BTC
-    ETH
-    BNB
-    SOL
-    XRP
-
-Cần kiểm tra pipeline cuối cùng có thực sự consume artifact từ Universe Builder hay không.
-
-Vấn đề 1:
-Nếu Universe Builder tồn tại nhưng Quant chỉ dùng fixed symbols,
-kiến trúc và implementation không đồng nhất.
-
-Vấn đề 2:
-Nếu dùng universe "hiện tại" cho dữ liệu quá khứ,
-sẽ có survivorship bias.
+    future_5d_return / historical_5d_volatility
 
 Ví dụ:
-Chỉ chọn các coin hiện nay đang lớn,
-nhưng bỏ qua các coin từng nằm top trong quá khứ rồi sụp.
+vol_1d = 4%
 
-Khi đó historical backtest đẹp hơn thực tế.
+vol_5d xấp xỉ:
+    4% * sqrt(5) ≈ 8.94%
 
-Cách sửa:
-Tốt nhất dùng point-in-time universe:
+Threshold 0.5:
+    khoảng ±4.47%
 
-    date -> list symbols đủ tiêu chuẩn tại ngày đó
+Target như vậy có thể bớt noise hơn.
 
-Ví dụ theo:
+Không nên đổi ngay rồi mặc định tốt hơn.
+Phải A/B test bằng OOF + holdout.
+
+
+============================================================
+9. [MEDIUM] RAW OHLCV VẪN CÓ THỂ ĐƯỢC ĐƯA VÀO MODEL
+============================================================
+
+Các cột có khả năng vẫn nằm trong feature list:
+
+    open
+    high
+    low
+    close
     volume
-    liquidity
-    listing age
-    market availability
 
-Quant dataset tại thời điểm t chỉ được sử dụng coin thuộc universe ở thời điểm t.
-
-Nếu chưa làm được point-in-time universe:
-- có thể giữ fixed universe v1,
-- nhưng ghi rõ đây là controlled universe,
-- không tuyên bố backtest đại diện toàn market.
-
-Tiêu chí:
-- Universe sử dụng trong historical backtest phải reproducible.
-- Không dùng future membership để chọn past assets.
-
-
-====================================================================
-11. [MEDIUM] CẦN KIỂM TRA FEATURE ENGINEERING CÓ FIT TRANSFORMATION CHỈ TRÊN TRAIN HAY KHÔNG
-====================================================================
-
-Đây là checklist bắt buộc vì không phải mọi feature đều leakage-free chỉ vì dùng rolling.
-
-Các feature rolling thuần quá khứ thường ổn:
-
-    rolling mean
-    rolling std
-    RSI
-    EMA
-    lag
-    backward merge
-
-Nhưng nếu có các bước như:
-
-    StandardScaler.fit(full_dataset)
-    quantile transform
-    PCA
-    feature selection trên full dataset
-    global median/imputation từ full data
-    normalization dùng future distribution
-
-thì sẽ leakage.
-
-Cách sửa:
-Mọi transformation có bước "fit" phải theo pattern:
-
-    transformer.fit(train)
-    transformer.transform(train)
-    transformer.transform(val)
-    transformer.transform(holdout)
-
-Riêng rolling indicators không cần fit thì có thể build trước,
-miễn chỉ dùng dữ liệu t và quá khứ.
-
-Tiêu chí:
-Audit toàn pipeline:
-- feature nào stateless
-- feature nào fitted
-- fitted object nào phải fold-local
-
-
-====================================================================
-12. [MEDIUM] CẦN THÊM SANITY TEST CHO POINT-IN-TIME FEATURE
-====================================================================
-
-Mục tiêu:
-Chứng minh feature tại t không thay đổi khi thêm dữ liệu tương lai.
-
-Test rất quan trọng.
-
-Cách test:
-
-Bước 1:
-Build features từ dữ liệu chỉ đến ngày T.
-
-    features_A = build(data[:T])
-
-Bước 2:
-Build features từ dữ liệu đến T + 100 ngày.
-
-    features_B = build(data[:T+100])
-
-Bước 3:
-So sánh feature của các timestamp <= T.
-
-Kỳ vọng:
-
-    features_A[t] == features_B[t]
-
-cho các row đã đủ warmup.
-
-Nếu khác:
-Pipeline đang dùng dữ liệu tương lai ở đâu đó.
-
-Đây là một test rất mạnh để bắt leakage mà mắt thường khó tìm.
-
-
-====================================================================
-13. [MEDIUM] CẦN THÊM SANITY TEST CHO LABEL
-====================================================================
-
-Label phải:
-- được tính riêng theo symbol,
-- đúng forecast horizon,
-- không nhảy qua symbol,
-- không giữ các row cuối chưa đủ future horizon.
-
-Ví dụ BTC:
-
-    close(t) = 100
-    close(t+5) = 110
-
-future return phải là:
-
-    10%
-
-Không được lấy giá của ETH/SOL.
-
-Các row cuối mỗi symbol mà không có t+5:
-    label phải NaN
-    và phải bị loại khỏi supervised dataset.
-
-Nên viết unit test rõ ràng dù hiện tại logic group per symbol đã có vẻ đúng.
-
-
-====================================================================
-14. [MEDIUM] HOLDOUT 3 THÁNG CÓ THỂ QUÁ NGẮN ĐỂ ĐÁNH GIÁ REGIME ROBUSTNESS
-====================================================================
-
-Đây không phải bug bắt buộc.
-
-Nhưng với daily crypto:
-3 tháng có thể chỉ đại diện một market regime.
-
-Ví dụ toàn bộ holdout nằm trong:
-- bull trend,
-hoặc
-- sideways,
-hoặc
-- high volatility.
-
-Khi đó kết luận model "tốt" có thể quá phụ thuộc giai đoạn.
-
-Khuyến nghị:
-Nếu data đủ:
-- giữ 6-12 tháng final holdout
-hoặc
-- có nhiều out-of-time test windows.
+Trong multi-asset model,
+raw price có thể vô tình trở thành asset identifier.
 
 Ví dụ:
-    2024 H2
-    2025 H1
-    2025 H2
-    2026 H1
+    BTC close rất lớn
+    XRP close rất nhỏ
 
-Không tune trên các windows được gọi là final test.
+Model có thể học:
+    "giá lớn -> BTC"
 
-Nếu data ít:
-giữ walk-forward OOF là trọng tâm,
-và ghi rõ limitation của holdout.
-
-
-====================================================================
-15. [OPTIONAL] 3 NĂM DAILY DATA CÓ THỂ HƠI ÍT CHO 60+ FEATURES + HYPERPARAMETER SEARCH
-====================================================================
-
-Đây không phải lỗi.
-
-Khoảng 3 năm daily:
-    ~1095 timestamps / symbol
-
-Dữ liệu tài chính còn có autocorrelation và regime dependency,
-nên effective sample size nhỏ hơn số row.
-
-Nếu model có:
-- 60+ features
-- nhiều model
-- Optuna nhiều trial
-- nhiều config experiment
-
-thì risk research overfitting tăng.
+thay vì học dynamics thị trường.
 
 Khuyến nghị:
-Nếu dữ liệu sạch có sẵn, thử:
-    4-6 năm
+Chạy feature ablation:
 
-Nhưng:
-Không nên tăng data bằng mọi giá nếu các asset chưa tồn tại đủ lâu.
-Phải xử lý listing date đúng point-in-time.
+Model A:
+    giữ raw OHLCV
 
-Quan trọng hơn số năm là:
-- leakage-free
-- regime diversity
-- untouched test
+Model B:
+    loại raw OHLCV
+
+Giữ các feature normalized:
+
+    return_1d
+    return_5d
+    log_return
+    close / EMA - 1
+    close / SMA - 1
+    ATR / close
+    high / close - 1
+    low / close - 1
+    volume / rolling_volume
+    relative strength
+    cross-sectional rank
+
+So sánh bằng:
+- OOF Log Loss
+- Macro F1
+- Holdout
+- Backtest
 
 
-====================================================================
-16. [OPTIONAL] KHÔNG NÊN TỐI ƯU TRỰC TIẾP PNL BẰNG OPTUNA Ở GIAI ĐOẠN ĐẦU
-====================================================================
+============================================================
+10. [MEDIUM] BACKTEST ĐÃ SỬA TIMING TỐT HƠN
+============================================================
 
-Hiện optimize logloss là hợp lý cho probabilistic classifier.
+Điểm đã sửa tốt:
 
-Không nên ngay lập tức đổi objective Optuna thành:
-    maximize backtest PnL
+    Signal tại T
+        ->
+    Entry từ T+1
 
-Vì rất dễ overfit strategy vào validation period.
+và có fixed forecast horizon khoảng 5 ngày.
 
-Khuyến nghị:
-Primary objective:
-    logloss / Brier / macro-F1 tùy mục tiêu model
+Điều này tốt hơn bản cũ,
+vì model không còn dùng close(T) để tạo signal rồi giả định trade ngay tại cùng close(T).
 
-Secondary diagnostics:
-    precision at high confidence
-    return
+Đây là sửa đúng và nên giữ.
+
+
+============================================================
+11. [MEDIUM] SHARPE VÀ MAX DRAWDOWN VẪN CHƯA PHẢI PORTFOLIO METRIC HOÀN CHỈNH
+============================================================
+
+Hiện vẫn còn metric dạng:
+
+    pseudo_sharpe_ratio
+
+được tính từ return từng trade.
+
+Đây không phải Sharpe chuẩn của portfolio return time series.
+
+Ngoài ra,
+nếu equity chỉ cập nhật khi trade đóng,
+drawdown đang xảy ra trong lúc position còn mở có thể không được ghi nhận đầy đủ.
+
+Cách sửa:
+Tạo mark-to-market portfolio equity theo từng timestamp.
+
+Mỗi timestamp lưu:
+
+    cash
+    position_value
+    unrealized_pnl
+    realized_pnl
+    total_equity
+    portfolio_return
+    exposure
+
+Sau đó tính:
+
+    CAGR
+    annualized volatility
     Sharpe
-    MDD
+    Sortino
+    Max Drawdown
+    Calmar
     turnover
+    exposure
 
-Có thể dùng multi-objective sau này,
-nhưng phải giữ final holdout hoàn toàn untouched.
-
-
-====================================================================
-17. [OPTIONAL] FEATURE ABLATION QUAN TRỌNG HƠN VIỆC THÊM NHIỀU INDICATOR
-====================================================================
-
-Hiện có nhiều feature groups.
-
-Nên test từng nhóm:
-
-A. Price/return only
-B. Technical indicators
-C. Volatility
-D. Volume/liquidity
-E. Cross-asset
-F. Market breadth
-G. All features
-
-Sau đó xem delta:
-
-    OOF logloss
-    OOF macro-F1
-    holdout metric
-    backtest Sharpe
-    MDD
-
-Nếu bỏ một nhóm mà performance không giảm,
-nên bỏ nhóm đó.
-
-Lợi ích:
-- model đơn giản hơn,
-- inference realtime nhanh hơn,
-- ít overfit,
-- dễ giải thích cho Fusion Expert.
+Không dùng pseudo Sharpe để kết luận model production-ready.
 
 
-====================================================================
-18. [OPTIONAL] THÊM REGIME-BASED EVALUATION
-====================================================================
+============================================================
+12. [LOW] LOGISTIC REGRESSION SHAP BỊ FAIL
+============================================================
 
-Một metric trung bình có thể che mất việc model chỉ tốt trong bull market.
+Lỗi kiểu:
 
-Nên chia evaluation:
+    TreeExplainer does not support sklearn Pipeline
 
-Trend:
-    bull
-    bear
-    sideways
+Điều này không ảnh hưởng prediction.
 
-Volatility:
-    low vol
-    medium vol
-    high vol
+Chỉ ảnh hưởng explainability/report.
 
-Có thể dùng rule không nhìn tương lai:
-    rolling BTC return
-    rolling volatility
+Cách sửa:
+Dùng explainer phù hợp:
+- LinearExplainer
+- hoặc generic shap.Explainer
+- hoặc giải thích trực tiếp coefficient nếu pipeline có scaler + logistic model
 
-Sau đó báo cáo:
-
-    macro F1
-    Brier
-    bullish precision
-    bearish precision
-    strategy return
-
-theo từng regime.
-
-Điều này rất quan trọng trước khi Fusion với News.
+Không phải ưu tiên trước.
 
 
-====================================================================
-19. [OPTIONAL] THÊM CROSS-SECTIONAL FEATURES THAY VÌ CHỈ THÊM TA INDICATORS
-====================================================================
+============================================================
+13. [MEDIUM] HISTORY_YEARS TRONG CONFIG CẦN ĐƯỢC ENFORCE Ở DATASET BUILDER
+============================================================
 
-Hiện cross-asset context là một hướng tốt.
+Config có:
 
-Có thể thử:
+    history_years: 5
 
-    cross-sectional momentum rank
-    volatility rank
-    volume rank
-    market breadth
-    breadth change / acceleration
-    return dispersion
-    BTC-relative momentum
-    ETH-relative momentum
-    rolling BTC-alt correlation
+Nhưng nếu Dataset Builder chỉ load toàn bộ candle có trong storage,
+thì giá trị config này có thể không thực sự giới hạn training window.
 
-Các feature này thường có ý nghĩa hơn việc thêm nhiều phiên bản RSI/MACD giống nhau.
+Vấn đề:
+Nếu data/silver chứa nhiều hơn 5 năm,
+dataset có thể lấy tất cả.
 
-Phải đảm bảo mọi calculation chỉ dùng dữ liệu có sẵn tại t.
+Khi đó:
+- config không reproducible
+- experiment 3 năm / 5 năm không thật sự khác nhau như mong muốn
+
+Cách sửa:
+Filter explicit theo timestamp.
+
+Ví dụ:
+
+    max_time = df["close_time"].max()
+
+    min_time = max_time - pd.DateOffset(years=history_years)
+
+    df = df[df["close_time"] >= min_time]
+
+Tốt hơn nữa:
+dataset manifest nên ghi rõ:
+
+    min_timestamp
+    max_timestamp
+    number_of_symbols
+    number_of_samples
 
 
-====================================================================
-20. [HIGH] CẦN TÁCH RÕ TRAINING PIPELINE VÀ LIVE INFERENCE PIPELINE
-====================================================================
+============================================================
+14. [IMPORTANT] SAU KHI SỬA ARGMAX, KHÔNG NÊN ĐỔI MODEL NGAY
+============================================================
 
-Trước khi làm realtime.
+Thứ tự đúng:
+
+1. Sửa classification evaluation dùng argmax.
+2. In confusion matrix.
+3. In per-class metrics.
+4. Train/evaluate lại.
+5. Xem metric thực sự.
+6. Sau đó mới quyết định có cần đổi label/features hay không.
 
 Không nên:
+    LightGBM -> LSTM
+    LightGBM -> Transformer
 
-    new candle
-    -> rebuild full dataset
-    -> retrain model
-    -> predict
-
-Realtime v1 nên:
-
-LIVE:
-    new closed candle
-    -> validate candle
-    -> incremental feature calculation
-    -> load current production model
-    -> predict probabilities
-    -> save prediction
-    -> chờ label mature sau 5 ngày
-
-TRAINING:
-    theo lịch / drift trigger
-    -> build training dataset
-    -> walk-forward CV
-    -> tune
-    -> evaluate
-    -> compare current production model
-    -> promote model nếu đạt tiêu chí
-
-Vì sao:
-- inference phải ổn định và nhanh,
-- tránh model thay đổi mỗi ngày ngoài kiểm soát,
-- dễ reproduce prediction,
-- dễ rollback model.
-
-
-====================================================================
-21. [HIGH] REALTIME PHẢI DÙNG CHÍNH CÙNG FEATURE CODE VỚI TRAIN
-====================================================================
-
-Đây là lỗi production rất phổ biến.
-
-Không viết một bộ feature realtime mới độc lập nếu có thể tránh.
-
-Nếu training dùng:
-
-    EMA formula A
-    timezone UTC
-    candle close convention X
-
-nhưng realtime dùng khác một chút,
-model nhận distribution khác training.
-
-Đây gọi là training-serving skew.
-
-Cách làm:
-Feature logic dùng chung:
-
-    feature_engineering/
-        core functions
-
-Training:
-    historical dataframe -> same feature functions
-
-Realtime:
-    recent buffer -> same feature functions
-
-Tiêu chí:
-Cho cùng một historical timestamp,
-offline feature và simulated-live feature phải gần như giống tuyệt đối.
-
-
-====================================================================
-22. [HIGH] CẦN PREDICTION REGISTRY CHO SHADOW MODE
-====================================================================
-
-Trước Expert News, nên chạy Quant shadow live.
-
-Mỗi prediction lưu:
-
-    prediction_id
-    model_version
-    config_version
-    feature_version
-    symbol
-    prediction_time
-    forecast_horizon
-    p_bearish
-    p_sideways
-    p_bullish
-    selected_signal
-    entry_reference_price
-    data_timestamp
-    created_at
-
-Sau 5 ngày, thêm:
-
-    realized_return
-    realized_label
-    prediction_correct
-    simulated_pnl
-
-Vì sao:
-Không có registry thì sau vài tuần rất khó trả lời:
-- model nào tạo prediction?
-- lúc đó config nào?
-- feature data có đúng không?
-- live accuracy khác offline ra sao?
-
-Shadow mode nên chạy trước khi dùng output cho quyết định thật.
-
-
-====================================================================
-23. [HIGH] EXPERT NEWS CHỈ NÊN LÀM SAU KHI QUANT OUTPUT CONTRACT ỔN ĐỊNH
-====================================================================
-
-Lý do:
-Sau này Fusion Expert cần ghép các expert.
-
-Quant nên output schema ổn định trước.
-
-Gợi ý:
-
-    {
-        "symbol": "BTCUSDT",
-        "prediction_time": "...",
-        "horizon": "5d",
-        "p_bearish": ...,
-        "p_sideways": ...,
-        "p_bullish": ...,
-        "confidence": ...,
-        "model_version": "...",
-        "feature_version": "..."
-    }
-
-Sau đó News Expert cũng có contract tương tự:
-
-    {
-        "symbol": "BTCUSDT",
-        "event_time": "...",
-        "sentiment": ...,
-        "relevance": ...,
-        "impact": ...,
-        "novelty": ...,
-        "event_type": "...",
-        "horizon": "...",
-        "confidence": ...
-    }
-
-Nếu Quant contract còn thay đổi liên tục mà đã build Fusion,
-sau này phải sửa dây chuyền.
-
-
-====================================================================
-THỨ TỰ SỬA KHUYẾN NGHỊ
-====================================================================
-
-PHASE A - BẮT BUỘC TRƯỚC KHI TIN METRIC HIỆN TẠI
-
-[1] Sửa embargo theo thời gian / label_end_time.
-[2] Sửa execution: signal(t) -> trade(t+1).
-[3] Tạo fixed-horizon 5d backtest để align với target.
-[4] Tính class weight trong từng training fold.
-[5] Xây portfolio equity curve + Sharpe/MDD chuẩn.
-[6] Thêm baseline.
-[7] Calibration + tune threshold bằng OOF, không dùng holdout.
-
-Sau Phase A:
-CHẠY LẠI TOÀN BỘ WALK-FORWARD + FINAL HOLDOUT.
-
-Không so sánh metric mới với metric cũ một cách máy móc,
-vì metric cũ có thể bị optimistic do validation/backtest bias.
-
-
-PHASE B - CLEANUP / ROBUSTNESS
-
-[8] Ablation raw OHLCV.
-[9] So sánh volatility normalization của label.
-[10] Audit Universe Builder / survivorship bias.
-[11] Audit fitted feature transformations.
-[12] Point-in-time feature test.
-[13] Label unit test.
-[14] Regime evaluation.
-[15] Feature-group ablation.
-
-
-PHASE C - REALTIME / SHADOW
-
-[16] Tách training và inference.
-[17] Dùng chung feature code offline/live.
-[18] Prediction registry.
-[19] Model/version registry.
-[20] Shadow live ít nhất đủ để label 5d mature nhiều lần.
-
-
-PHASE D - NEWS EXPERT
-
-Chỉ bắt đầu khi:
-- Quant pipeline leakage-safe.
-- Realtime feature parity đã test.
-- Prediction schema ổn định.
-- Có live/shadow tracking.
-
-Sau đó mới:
-    Expert News
-        -> structured event signal
-        -> Fusion Expert
-
-
-====================================================================
-CHECKLIST "DONE" CHO QUANT EXPERT V1.1
-====================================================================
-
-[ ] Không có train sample nào có label overlap validation window.
-[ ] Class weight chỉ tính từ training fold.
-[ ] Feature(t) không thay đổi khi thêm future data.
-[ ] Label được tính riêng từng symbol.
-[ ] Signal(t) chỉ được execute từ t+1 trở đi.
-[ ] Có backtest fixed 5-day horizon.
-[ ] Có fee + slippage.
-[ ] Có portfolio equity curve.
-[ ] Có Sharpe, Sortino, MDD, CAGR, turnover.
-[ ] Có Buy & Hold / Equal Weight / Momentum baseline.
-[ ] Threshold được tune bằng OOF validation.
-[ ] Final holdout không dùng để tune.
-[ ] Có probability calibration report.
-[ ] Có ablation raw OHLCV.
-[ ] Có feature-group ablation.
-[ ] Có evaluation theo market regime.
-[ ] Có model_version + config_version.
-[ ] Offline feature = simulated-live feature.
-[ ] Có prediction registry cho shadow mode.
-
-
-====================================================================
-ƯU TIÊN CUỐI CÙNG
-====================================================================
-
-Không nên ưu tiên:
-    LightGBM -> LSTM / Transformer
 ngay lúc này.
 
-Nên ưu tiên:
-    VALIDATION CORRECTNESS
-        ->
-    REALISTIC BACKTEST
-        ->
-    CALIBRATION
-        ->
-    SHADOW REALTIME
-        ->
-    EXPERT NEWS
-        ->
-    FUSION
+Nếu evaluation đang sai,
+thay model sẽ chỉ làm nghiên cứu phức tạp hơn mà không giải quyết nguyên nhân gốc.
 
-Nếu sau khi sửa các lỗi leakage/backtest trên mà Quant vẫn giữ được edge,
-lúc đó kết quả có giá trị hơn nhiều và đủ đáng tin để xây các expert còn lại.
 
+============================================================
+15. CÁCH ĐỌC KẾT QUẢ SAU KHI SỬA EVALUATION
+============================================================
+
+TRƯỜNG HỢP A:
+
+Sau khi dùng argmax:
+
+    Balanced Accuracy ~ 38-42%
+    Macro F1 ~ 0.35-0.40
+
+thì đây là một kết quả hoàn toàn khác.
+
+Với bài toán:
+    crypto
+    3 class
+    forecast 5 ngày
+    leakage-safe
+
+mức này có thể đáng để nghiên cứu tiếp.
+
+Khi đó:
+    chưa cần bỏ Quant
+    chưa cần đổi model lớn
+    nên tiếp tục label/feature/backtest improvements.
+
+
+TRƯỜNG HỢP B:
+
+Sau khi dùng argmax vẫn:
+
+    Balanced Accuracy ≈ 33%
+    Macro F1 ≈ 0.30-0.33
+    Log Loss ≈ ln(3) ≈ 1.099
+
+thì khi đó mới có cơ sở nói:
+
+    feature + label hiện tại gần như chưa tạo predictive signal
+
+Lúc đó ưu tiên:
+
+    label redesign
+    feature ablation
+    add more assets
+    regime features
+    cross-sectional features
+
+trước khi nghĩ tới neural networks.
+
+
+============================================================
+16. THỨ TỰ SỬA KHUYẾN NGHỊ
+============================================================
+
+PHASE 1 - BẮT BUỘC
+
+[1] Classification evaluation:
+    dùng np.argmax(y_prob, axis=1)
+
+[2] Không dùng trading threshold để tạo y_pred cho classification.
+
+[3] In:
+    Accuracy
+    Balanced Accuracy
+    Macro F1
+    Weighted F1
+    per-class precision
+    per-class recall
+    confusion matrix
+
+[4] Tune trading threshold từ OOF predictions,
+    không phải prediction trên chính training set.
+
+[5] Mở rộng threshold search xuống khoảng 0.34+.
+
+
+PHASE 2 - TRAIN LẠI VÀ ĐỌC KẾT QUẢ
+
+[6] Train lại LightGBM / XGBoost / CatBoost / Logistic.
+
+[7] So:
+    OOF metrics
+    Holdout metrics
+    prediction distribution
+
+[8] Chưa thay model architecture.
+
+
+PHASE 3 - NẾU METRIC VẪN THẤP
+
+[9] Train 8-10 coin thực sự.
+
+[10] Test label volatility scaling:
+     vol_1d
+     vol_1d * sqrt(5)
+     historical vol_5d
+
+[11] Ablation raw OHLCV.
+
+[12] Feature-group ablation.
+
+[13] Regime-based evaluation.
+
+
+PHASE 4 - BACKTEST
+
+[14] Giữ signal(T) -> execution(T+1).
+
+[15] Giữ fixed 5-day horizon benchmark.
+
+[16] Xây portfolio equity curve thật.
+
+[17] Tính Sharpe / MDD chuẩn.
+
+[18] So với baseline:
+     Buy & Hold BTC
+     Equal Weight
+     Momentum baseline
+
+
+============================================================
+17. KẾT LUẬN HIỆN TẠI
+============================================================
+
+Hiện tại KHÔNG nên kết luận:
+
+    "Quant model của tôi chỉ đạt 33%, model yếu."
+
+Lý do:
+Classification prediction đang bị trading threshold 0.50 can thiệp.
+
+Điều này có thể ép nhiều prediction về SIDEWAYS
+và làm Macro F1 / Balanced Accuracy thấp giả tạo.
+
+Ưu tiên số 1:
+    sửa y_pred classification về ARGMAX.
+
+Sau đó:
+    train/evaluate lại một vòng.
+
+Nếu metric vẫn gần random sau khi evaluation sạch,
+lúc đó mới chuyển sang tối ưu:
+    label
+    feature
+    universe
+    data horizon
+
+Chưa nên làm Realtime hoặc Expert News ngay
+cho đến khi kết quả Quant sau sửa evaluation được xác nhận.

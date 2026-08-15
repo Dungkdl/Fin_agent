@@ -66,6 +66,14 @@ class DatasetBuilder:
             
         # 5. Gom toàn bộ
         combined_df = pd.concat(dfs.values(), ignore_index=True)
+        
+        # 5.5 Enforce history_years from config
+        history_years = self.config.get("history_years", 5)
+        if not combined_df.empty:
+            max_time = combined_df["close_time"].max()
+            min_time = max_time - pd.DateOffset(years=history_years)
+            combined_df = combined_df[combined_df["close_time"] >= min_time].copy()
+            logger.info(f"Đã lọc dữ liệu theo history_years={history_years}. Số lượng mẫu sau khi lọc: {len(combined_df)}")
 
         # 4. Gán trọng số
         combined_df = self.weight_builder.build_weights(combined_df)

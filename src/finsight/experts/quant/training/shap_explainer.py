@@ -34,6 +34,10 @@ def explain_model_with_shap(model, df_test: pd.DataFrame, features: list, model_
         if hasattr(model, "named_steps") or "Pipeline" in str(type(model)):
             logger.info("Bỏ qua SHAP Explainer vì mô hình là dạng Pipeline/Linear (không hỗ trợ TreeExplainer).")
             return []
+            
+        if "catboost" in str(type(model)).lower():
+            logger.info("Bỏ qua SHAP Explainer cho CatBoost để tránh lỗi silent crash (segmentation fault) trên thư viện SHAP hiện tại.")
+            return []
 
         explainer = shap.TreeExplainer(model)
         shap_values = explainer.shap_values(X_sample)
