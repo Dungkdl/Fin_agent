@@ -153,6 +153,17 @@ class TrainingPipeline:
             bt_config = {**self.config.get("backtest", {}), "forecast_steps": self.config.get("forecast_steps", 5)}
             backtest_results = run_spot_backtest(df_sim, bt_config)
             
+            logger.info("=== KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===")
+            logger.info(f"Final Equity  : {backtest_results['final_equity']:.4f}")
+            logger.info(f"Net Return    : {backtest_results['net_return']:.2%}")
+            logger.info(f"B&H Baseline  : {backtest_results['baseline_return']:.2%}")
+            logger.info(f"Max Drawdown  : {backtest_results['max_drawdown']:.2%}")
+            logger.info(f"Sharpe Ratio  : {backtest_results['pseudo_sharpe_ratio']:.2f}")
+            logger.info(f"Win Rate      : {backtest_results['win_rate']:.2%}")
+            logger.info(f"Total Trades  : {backtest_results['total_trades']}")
+            logger.info(f"Avg Trade Ret : {backtest_results['average_trade_return']:.2%}")
+            logger.info("==================================================")
+            
             logger.info("Chạy phân tích SHAP Feature Importance...")
             shap_imp = explain_model_with_shap(
                 self.model.model, 

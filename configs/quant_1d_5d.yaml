@@ -15,6 +15,11 @@ universe:
     - BNBUSDT
     - SOLUSDT
     - XRPUSDT
+    - ADAUSDT
+    - DOGEUSDT
+    - DOTUSDT
+    - AVAXUSDT
+    - LINKUSDT
 data:
   history_years: 5
   source: hybrid

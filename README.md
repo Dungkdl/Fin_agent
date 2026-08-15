@@ -80,11 +80,11 @@ finsight universe build --quote-asset USDT --limit 10
 ```
 
 ### Giai đoạn 2: Tải và Tinh chế Dữ liệu Thô (Market Backfill)
-Lấy dữ liệu nến (Klines) từ Binance. Ở đây ta lấy khung ngày (`1d`) trong **5 năm gần nhất** cho nhiều đồng tiền điện tử hàng đầu (Top Crypto) để đảm bảo mô hình có đủ dữ liệu học hỏi các chu kỳ thị trường khác nhau. Dữ liệu Silver được lưu ở định dạng `Parquet` siêu tối ưu.
+Lấy dữ liệu nến (Klines) từ Binance. Ở đây ta lấy khung ngày (`1d`) trong **5 năm gần nhất** cho 10 đồng tiền điện tử hàng đầu (Top Crypto) để đảm bảo mô hình có đủ dữ liệu học hỏi các chu kỳ thị trường khác nhau. Dữ liệu Silver được lưu ở định dạng `Parquet` siêu tối ưu.
 
 ```bash
-# Tải dữ liệu 5 năm (Từ 2021-08-15 đến hiện tại) cho 11 đồng coin top đầu, khung 1 ngày (1d)
-finsight market backfill --symbols BTCUSDT,ETHUSDT,BNBUSDT,SOLUSDT,XRPUSDT,ADAUSDT,DOGEUSDT,DOTUSDT,MATICUSDT,AVAXUSDT,LINKUSDT --intervals 1d --start 2021-08-15 --end 2026-08-15 --mode rest --no-dry-run
+# Tải dữ liệu 5.5 năm (Từ 2021-01-01 đến hiện tại) cho 10 đồng coin top đầu, khung 1 ngày (1d)
+finsight market backfill --symbols BTCUSDT,ETHUSDT,BNBUSDT,SOLUSDT,XRPUSDT,ADAUSDT,DOGEUSDT,DOTUSDT,AVAXUSDT,LINKUSDT --intervals 1d --start 2021-01-01 --end 2026-08-15 --mode hybrid --no-dry-run
 ```
 
 ### Giai đoạn 3: Feature Engineering & Dataset Builder 🆕
@@ -96,8 +96,9 @@ finsight quant build-dataset --config configs/quant_1d_5d.yaml
 ```
 Đầu ra sẽ là một file `data/gold/training_samples/crypto_quant_1d_5d.parquet` chứa mọi thứ Model cần.
 
-### Giai đoạn 4: Huấn luyện Mô hình & Tuning (Model Training) 🆕
-Đưa file dữ liệu `Gold` vào huấn luyện. Hệ thống tự động sử dụng **Walk-Forward Cross Validation** kết hợp với **Optuna** để tìm siêu tham số tốt nhất. Hỗ trợ **Model Registry** (LightGBM, XGBoost, CatBoost, Logistic Regression).
+### Giai đoạn 4: Huấn luyện Mô hình & Backtest (Model Training) 🆕
+Đưa file dữ liệu `Gold` vào huấn luyện. Hệ thống tự động sử dụng **Walk-Forward Cross Validation** kết hợp với **Optuna** để tìm siêu tham số tốt nhất (Triệt tiêu Data Leakage). 
+Sau khi huấn luyện xong, hệ thống chạy mô phỏng Portfolio **Mark-To-Market Backtest** để đo lường chính xác Sharpe Ratio và Max Drawdown.
 
 ```bash
 # Huấn luyện 1 mô hình bất kỳ (vd: XGBoost) từ file config gốc
@@ -107,7 +108,7 @@ finsight quant train --config configs/quant_1d_5d.yaml --engine xgboost
 finsight quant train-all
 ```
 
-Kết quả của Phase 4 là mô hình AI hoàn chỉnh, báo cáo `metrics.json` và diễn giải `shap_importance.json` được tự động lưu tại `artifacts/models/crypto/<model_name>/v1/`.
+Kết quả của Phase 4 là mô hình AI hoàn chỉnh, báo cáo tổng quát có biểu đồ `shap_importance` tự động lưu tại `artifacts/models/crypto/<model_name>/v1/`. Trực tiếp in ra Terminal các chỉ số Backtest chuẩn Mark-to-market.
 
 ### Giai đoạn 5: Vận hành Thực tế (Live Updates) 🆕
 Mỗi khi bạn muốn lấy dữ liệu nến mới nhất của ngày hôm nay để cập nhật cho Model, bạn không cần chạy lại từ đầu. Hệ thống Hỗ trợ **Incremental Backfill** (Tải bù thông minh):
