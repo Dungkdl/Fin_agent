@@ -28,16 +28,32 @@ class DirectionLabelBuilder:
         # return_t = close[t + steps] / close[t] - 1
         df["future_return"] = (close.shift(-self.forecast_steps) / close) - 1
         
-        # 2. Tính Volatility tại thời điểm t để chuẩn hóa
+        # 2. Lấy label_type từ config
+        label_type = self.config.get("label_type", "current")
         window = self.config.get("volatility_window", 48)
-        log_return = np.log(close / close.shift(1))
-        sigma_t = log_return.rolling(window=window, min_periods=window//2).std()
-        
-        # 3. Chuẩn hóa future return
         epsilon = 1e-8
-        df["normalized_return"] = df["future_return"] / (sigma_t + epsilon)
         
-        # 4. Gán nhãn (Label)
+        # 3. Tính Mẫu số (Denominator) tùy theo label_type
+        if label_type == "sqrt_time":
+            # L1: sigma_1d * sqrt(horizon)
+            log_return_1d = np.log(close / close.shift(1))
+            sigma_1d = log_return_1d.rolling(window=window, min_periods=window//2).std()
+            denominator = sigma_1d * np.sqrt(self.forecast_steps)
+            
+        elif label_type == "historical_horizon":
+            # L2: historical 5d volatility
+            log_return_horizon = np.log(close / close.shift(self.forecast_steps))
+            denominator = log_return_horizon.rolling(window=window, min_periods=window//2).std()
+            
+        else:
+            # L0 (current): sigma_1d
+            log_return_1d = np.log(close / close.shift(1))
+            denominator = log_return_1d.rolling(window=window, min_periods=window//2).std()
+        
+        # 4. Chuẩn hóa future return
+        df["normalized_return"] = df["future_return"] / (denominator + epsilon)
+        
+        # 5. Gán nhãn (Label)
         pos_thresh = self.config.get("positive_threshold", 0.5)
         neg_thresh = self.config.get("negative_threshold", -0.5)
         

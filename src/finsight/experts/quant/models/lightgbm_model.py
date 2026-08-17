@@ -38,6 +38,9 @@ class LightGBMQuantModel(BaseQuantModel):
             "future_return", "normalized_return", "direction_label",
             "class_weight", "recency_weight", "regime_weight", "quality_weight", "final_weight"
         ]
+        if not self.config.get("include_raw_ohlcv", True):
+            exclude_cols.extend(["open", "high", "low", "close", "volume"])
+            
         self.features = [c for c in df.columns if c not in exclude_cols]
         
     def _map_labels(self, labels: pd.Series) -> pd.Series:

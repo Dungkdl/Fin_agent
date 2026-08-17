@@ -1,0 +1,1517 @@
+FIN_AGENT - QUANT EXPERT
+TÀI LIỆU NGHIÊN CỨU CẢI THIỆN BENCHMARK
+PHẠM VI CỐ ĐỊNH: 10 COIN, DAILY CANDLE, DỰ ĐOÁN 5 NGÀY
+====================================================================
+
+MỤC TIÊU
+--------------------------------------------------------------------
+Tài liệu này tổng hợp hướng nghiên cứu sau khi core pipeline của Quant Expert
+đã tương đối ổn định.
+
+Không nên nhìn bài toán theo kiểu:
+    Model thấp -> tăng Optuna.
+
+Nên nhìn Quant Expert thành các tầng:
+
+    1. Label design
+    2. Feature engineering
+    3. Class/sample weighting
+    4. Model + hyperparameter
+    5. Probability calibration + trading policy
+
+Nguyên tắc nghiên cứu:
+    BASELINE
+        ->
+    ĐỔI 1 THỨ
+        ->
+    ĐO LẠI
+        ->
+    KEEP / REJECT
+        ->
+    ĐỔI THỨ TIẾP THEO
+
+
+====================================================================
+1. THIẾT KẾ HIỆN TẠI GIỮ NGUYÊN
+====================================================================
+
+Universe 10 coin:
+
+    BTCUSDT
+    ETHUSDT
+    BNBUSDT
+    SOLUSDT
+    XRPUSDT
+    ADAUSDT
+    DOGEUSDT
+    DOTUSDT
+    AVAXUSDT
+    LINKUSDT
+
+Timeframe:
+    1 ngày / candle.
+
+Forecast horizon:
+    5 ngày.
+
+Output:
+    BEARISH
+    SIDEWAYS
+    BULLISH.
+
+Lưu ý:
+    timeframe = 1d không có nghĩa model chỉ nhìn đúng 1 ngày.
+
+Feature engine đã sử dụng lịch sử nhiều ngày:
+    return 1/2/4/8/16
+    RSI
+    EMA
+    MACD
+    volatility
+    volume rolling
+    market regime
+    BTC/ETH context
+    cross-asset context
+
+Ý nghĩa đúng:
+
+    Lịch sử nhiều ngày đến t
+        ->
+    Feature vector tại t
+        ->
+    Dự đoán hướng khoảng t+5.
+
+
+====================================================================
+2. TOÀN PIPELINE
+====================================================================
+
+    OHLCV 10 COINS
+          |
+          v
+    FEATURE ENGINEERING
+          |
+          v
+        X(t)
+          |
+          |                    Future price t+5
+          |                           |
+          |                           v
+          |                     LABEL BUILDER
+          |                           |
+          |                    Bear/Side/Bull
+          |                           |
+          +-------------+-------------+
+                        |
+                        v
+                  TRAINING DATA
+                        |
+                        v
+                     MODEL
+                        |
+                        v
+              P(Bear/Side/Bull)
+                        |
+               +--------+---------+
+               |                  |
+               v                  v
+        Classification         Trading
+            argmax            threshold
+               |                  |
+        BA/F1/LL/Brier       BUY / CASH
+                                  |
+                                  v
+                               Backtest
+
+
+====================================================================
+3. TẦNG 1 - LABEL DESIGN
+====================================================================
+
+Label hiện tại gần như:
+
+    future_return_5d =
+        close[t+5] / close[t] - 1
+
+    sigma_1d =
+        rolling std(daily return)
+
+    normalized_return =
+        future_return_5d / sigma_1d
+
+Sau đó:
+
+    > +0.5  -> BULLISH
+    < -0.5  -> BEARISH
+    còn lại -> SIDEWAYS
+
+
+--------------------------------------------------------------------
+3.1. VẤN ĐỀ CỦA LABEL HIỆN TẠI
+--------------------------------------------------------------------
+
+Numerator:
+    return horizon 5 ngày.
+
+Denominator:
+    volatility horizon 1 ngày.
+
+Hai horizon chưa khớp.
+
+Ví dụ:
+    daily volatility = 4%.
+
+Threshold:
+    0.5 * 4% = 2%.
+
+Tức:
+    +2% trong 5 ngày -> BULLISH.
+    -2% trong 5 ngày -> BEARISH.
+
+Với crypto, +/-2% trong 5 ngày có thể chủ yếu là noise.
+
+Hậu quả:
+    movement nhỏ
+        ->
+    bị gán Bull/Bear
+        ->
+    target nhiễu
+        ->
+    model khó học.
+
+
+--------------------------------------------------------------------
+3.2. LABEL A - CURRENT
+--------------------------------------------------------------------
+
+    future_return_5d / vol_1d
+
+Dùng làm baseline.
+
+
+--------------------------------------------------------------------
+3.3. LABEL B - SQRT TIME
+--------------------------------------------------------------------
+
+    sigma_5d_approx =
+        sigma_1d * sqrt(5)
+
+    normalized_return =
+        future_return_5d
+        /
+        (sigma_1d * sqrt(5))
+
+Ví dụ:
+    sigma_1d = 4%
+    sigma_5d ~ 8.94%
+
+Threshold 0.5:
+    BULLISH > +4.47%
+    BEARISH < -4.47%
+    SIDEWAYS ở giữa.
+
+Mục tiêu:
+    giảm việc coi movement nhỏ là trend.
+
+
+--------------------------------------------------------------------
+3.4. LABEL C - HISTORICAL 5-DAY VOLATILITY
+--------------------------------------------------------------------
+
+    historical_return_5d =
+        close[t] / close[t-5] - 1
+
+    historical_vol_5d =
+        rolling std(historical_return_5d)
+
+    normalized =
+        future_return_5d / historical_vol_5d
+
+Ưu điểm:
+    numerator và denominator cùng horizon 5 ngày.
+
+
+--------------------------------------------------------------------
+3.5. CÁCH TEST LABEL
+--------------------------------------------------------------------
+
+Giữ cố định:
+    10 coin
+    same features
+    same model
+    same split
+    same Optuna setup
+    same calibration
+    same backtest
+
+Chỉ đổi:
+    LABEL.
+
+Experiment:
+    L0 = current
+    L1 = vol_1d * sqrt(5)
+    L2 = historical vol_5d
+
+So:
+    class distribution
+    Balanced Accuracy
+    Macro F1
+    Log Loss
+    Brier
+    Calibration Bull F1
+    prediction distribution
+    backtest return
+    Sharpe
+    Max Drawdown
+
+
+====================================================================
+4. TẦNG 2 - FEATURE ENGINEERING
+====================================================================
+
+Các nhóm hiện có:
+
+    Price
+    Momentum
+    Volatility
+    Volume
+    Time
+    Market regime
+    Cross-asset
+
+Ví dụ Price:
+    return 1/2/4/8/16
+    log return
+    range
+    close-open
+    distance from high/low
+
+Momentum:
+    RSI
+    EMA
+    MACD
+    ROC
+    stochastic
+
+Volatility:
+    vol 4/16/48
+    ATR
+    Bollinger bandwidth
+    skew
+    kurtosis
+
+Volume:
+    volume change
+    volume / MA20
+    trade count
+    avg trade size
+    taker buy ratio
+    price-volume correlation
+
+Cross-asset:
+    coin return - BTC return
+    coin return - ETH return
+    BTC return
+    ETH return
+    market median
+    breadth
+
+
+====================================================================
+5. KHÔNG NÊN CHỈ THÊM NHIỀU TECHNICAL INDICATOR
+====================================================================
+
+Nhiều feature hiện có thể cùng mô tả momentum:
+
+    return_16
+    EMA ratio
+    MACD
+    ROC
+    RSI
+    distance from high
+
+Nếu tiếp tục thêm:
+    CCI
+    Williams %R
+    ADX
+    nhiều SMA crossover
+    nhiều momentum indicator
+
+có thể chỉ tạo nhiều cách nói cùng một signal.
+
+Rủi ro:
+    redundancy
+    overfit
+    training phức tạp hơn
+    khó giải thích improvement.
+
+
+====================================================================
+6. FEATURE ABLATION
+====================================================================
+
+Baseline:
+    F0 = ALL.
+
+Sau đó:
+    F1 = ALL - momentum
+    F2 = ALL - volatility
+    F3 = ALL - volume
+    F4 = ALL - cross_asset
+    F5 = ALL - regime
+
+Ví dụ:
+    ALL LogLoss = 1.09
+    ALL - momentum LogLoss = 1.06
+
+=> Momentum đang làm model tệ hơn.
+
+Kết luận:
+    không phải nhiều feature hơn luôn tốt hơn.
+
+
+====================================================================
+7. RAW PRICE / RAW SCALE ABLATION
+====================================================================
+
+Multi-asset model có thể dùng:
+    BTC close rất lớn
+    DOGE close rất nhỏ
+
+như một proxy nhận diện asset.
+
+Test:
+
+Experiment A:
+    raw OHLCV ON.
+
+Experiment B:
+    raw OHLCV OFF.
+
+Ưu tiên stationary / normalized features:
+    return
+    ratio
+    z-score
+    close / EMA - 1
+    volume / rolling volume
+    ATR / close
+    relative strength
+
+
+====================================================================
+8. HƯỚNG FEATURE MỚI ƯU TIÊN: CROSS-SECTIONAL
+====================================================================
+
+Time-series feature trả lời:
+
+    Coin A hôm nay thế nào
+    so với lịch sử chính Coin A?
+
+Cross-sectional feature trả lời:
+
+    Coin A hôm nay thế nào
+    so với 9 coin còn lại
+    tại cùng thời điểm?
+
+Đây là điểm rất phù hợp với universe 10 coin.
+
+
+====================================================================
+9. VÍ DỤ CROSS-SECTIONAL RANK
+====================================================================
+
+Tại ngày t:
+
+    SOL   +8%
+    BTC   +3%
+    ETH   +2%
+    ADA   +1%
+    LINK  +0.5%
+    BNB    0%
+    DOT   -0.5%
+    XRP   -1%
+    AVAX  -2%
+    DOGE  -4%
+
+Rank:
+    #1 SOL
+    #2 BTC
+    #3 ETH
+    ...
+    #10 DOGE
+
+SOL:
+    return_rank_1d = strongest.
+
+Có thể normalize:
+    strongest = 1.0
+    weakest   = 0.1
+
+Raw return:
+    SOL +8%
+
+chỉ nói:
+    tăng bao nhiêu.
+
+Rank nói:
+    mạnh thứ mấy trong universe.
+
+
+====================================================================
+10. VÌ SAO RANK CÓ GIÁ TRỊ
+====================================================================
+
+Ngày A:
+    SOL +8%
+    market median +1%
+
+=> SOL rất mạnh.
+
+Ngày B:
+    SOL +8%
+    market median +12%
+
+=> SOL thực ra yếu hơn phần lớn market.
+
+Raw return:
+    +8%
+giống nhau.
+
+Cross-sectional:
+    ngày A rank cao
+    ngày B rank thấp
+
+Model nhìn thấy context thị trường.
+
+
+====================================================================
+11. CROSS-SECTIONAL KHÁC RELATIVE TO BTC
+====================================================================
+
+Hiện:
+    SOL +8%
+    BTC +3%
+
+=> SOL - BTC = +5%.
+
+Hữu ích nhưng chỉ so với BTC.
+
+Nếu:
+    AVAX +9%
+    SOL  +8%
+    ETH  +7.5%
+    ADA  +7%
+    BTC  +3%
+
+SOL vẫn +5% so BTC nhưng không quá nổi bật giữa altcoin.
+
+Do đó nên giữ cả:
+    relative_to_BTC
+    +
+    cross-sectional rank.
+
+
+====================================================================
+12. CROSS-SECTIONAL V1
+====================================================================
+
+Không thêm quá nhiều ngay.
+
+Nên bắt đầu:
+
+    1. return_rank_1d
+    2. return_rank_5d
+    3. relative_return_to_market_1d
+    4. relative_return_to_market_5d
+    5. relative_volume_rank
+    6. volatility_rank
+    7. market_return_dispersion
+    8. breadth_change_1d
+
+Nếu muốn cực gọn:
+    1. return_rank_1d
+    2. return_rank_5d
+    3. relative_return_to_market_5d
+    4. relative_volume_rank
+    5. market_return_dispersion
+
+
+====================================================================
+13. GIẢI THÍCH TỪNG CROSS-SECTIONAL FEATURE
+====================================================================
+
+return_rank_1d:
+    coin mạnh/yếu thứ mấy trong 1 ngày.
+
+return_rank_5d:
+    coin mạnh/yếu thứ mấy trong 5 ngày.
+
+relative_return_to_market_1d:
+    coin_return_1d - median_return_1d.
+
+relative_return_to_market_5d:
+    coin_return_5d - median_return_5d.
+
+relative_volume_rank:
+    trước hết tính:
+        current_volume / rolling_mean(volume,20)
+    sau đó rank 10 coin.
+    Không nên rank raw volume.
+
+volatility_rank:
+    volatility của coin đứng ở đâu trong 10 coin.
+
+market_return_dispersion:
+    std(return của 10 coin tại cùng ngày).
+    Low dispersion = market đồng thuận.
+    High dispersion = thị trường phân hóa.
+
+breadth_change:
+    breadth_today - breadth_yesterday.
+    Cho biết participation đang mở rộng hay thu hẹp.
+
+
+====================================================================
+14. RANK VÀ RELATIVE RETURN KHÔNG TRÙNG NHAU
+====================================================================
+
+Rank:
+    vị trí tương đối.
+
+Relative return:
+    độ lớn chênh lệch.
+
+Case A:
+    SOL +8%
+    second +7.9%
+    rank = #1
+    advantage nhỏ.
+
+Case B:
+    SOL +8%
+    second +2%
+    rank = #1
+    advantage lớn.
+
+Do đó nên có cả:
+    rank
+    relative_return_to_market.
+
+
+====================================================================
+15. CROSS-SECTIONAL V2
+====================================================================
+
+Chỉ làm nếu V1 giúp benchmark.
+
+Có thể thêm:
+    momentum_rank_8d
+    momentum_rank_16d
+    rank_change_1d
+    rank_change_5d
+    rolling_beta_BTC
+    rolling_corr_BTC
+    abnormal_return_vs_BTC
+    breadth_3d_change
+    dispersion_change
+
+
+====================================================================
+16. ROLLING BETA VS BTC
+====================================================================
+
+Ví dụ:
+    BTC +1%
+    SOL lịch sử thường +1.8%
+
+=> beta SOL/BTC ~1.8.
+
+Nếu hôm nay:
+    BTC +3%
+
+SOL expected theo beta:
+    ~+5.4%.
+
+Nếu SOL chỉ +2%:
+    SOL đang underperform so với beta lịch sử.
+
+Có thể tạo:
+    beta_vs_BTC
+hoặc:
+    abnormal_return =
+        actual_return - beta * BTC_return.
+
+
+====================================================================
+17. ROLLING CORRELATION VS BTC
+====================================================================
+
+corr SOL-BTC = 0.9:
+    SOL đang market-driven.
+
+corr = 0.2:
+    SOL đang độc lập hơn.
+
+Cùng SOL +5%:
+
+Case A:
+    corr cao
+    BTC +4%
+    -> có thể chỉ là market beta.
+
+Case B:
+    corr thấp
+    BTC 0%
+    -> có thể là coin-specific strength.
+
+
+====================================================================
+18. QUY TẮC POINT-IN-TIME CHO CROSS-SECTIONAL
+====================================================================
+
+Rank phải tính:
+    THEO TỪNG TIMESTAMP.
+
+Không:
+    rank trên toàn lịch sử.
+
+Ví dụ:
+    2025-01-01 rank 10 coin.
+    2025-01-02 rank lại 10 coin.
+
+Tất cả dữ liệu:
+    known <= t.
+
+Nếu một coin thiếu candle tại t:
+    không dùng future candle để fill.
+
+Có thể:
+    exclude coin đó khỏi rank ngày đó
+hoặc:
+    reject timestamp.
+
+
+====================================================================
+19. CROSS-SECTIONAL KHÔNG THAY THẾ NORMALIZED RETURN
+====================================================================
+
+Nên giữ nhiều góc nhìn:
+
+return_5d:
+    tăng bao nhiêu?
+
+normalized_return:
+    movement lớn thế nào so với volatility của chính coin?
+
+rank:
+    mạnh thứ mấy trong market?
+
+relative_to_market:
+    vượt market bao nhiêu?
+
+Các feature này bổ sung nhau.
+
+
+====================================================================
+20. VÍ DỤ MODEL INTERACTION
+====================================================================
+
+SOL:
+    return_5d             = +12%
+    vol-adjusted return   = +0.9
+    return_rank_5d        = 1.0
+    relative_market       = +8%
+    relative_volume_rank  = 0.9
+    breadth               = 0.8
+
+Interpretation:
+    strong leader
+    + strong volume
+    + broad market participation
+
+Có thể là bullish continuation.
+
+Khác:
+
+    return_5d             = +12%
+    vol-adjusted return   = +0.4
+    return_rank_5d        = 0.5
+    relative_market       = 0%
+    relative_volume_rank  = 0.3
+
+Ở đây +12% có thể chỉ là movement bình thường của market.
+
+
+====================================================================
+21. CROSS-SECTIONAL CÓ THỂ HỖ TRỢ BEARISH
+====================================================================
+
+Ví dụ:
+    return_rank_5d < 0.2
+    relative_volume_rank > 0.8
+    BTC-relative return rất thấp
+    breadth falling
+
+Interpretation:
+    laggard
+    + bán mạnh
+    + volume xác nhận
+    + market participation suy yếu
+
+Có thể là bearish continuation.
+
+
+====================================================================
+22. CÁCH TRIỂN KHAI TRONG PIPELINE
+====================================================================
+
+    DAILY FEATURES PER COIN
+            |
+            v
+        return_1d
+        return_5d
+        volatility
+        volume_ratio
+        ...
+            |
+            v
+    JOIN 10 COINS BY TIMESTAMP
+            |
+            v
+    CROSS-SECTIONAL TRANSFORM
+            |
+            +-- return_rank_1d
+            +-- return_rank_5d
+            +-- vol_rank
+            +-- relative_volume_rank
+            +-- relative_market
+            +-- dispersion
+            +-- breadth_change
+            |
+            v
+    MERGE BACK TO EACH COIN ROW
+            |
+            v
+        MODEL DATASET
+
+
+====================================================================
+23. BENCHMARK CROSS-SECTIONAL V1
+====================================================================
+
+Giữ:
+    same 10 coins
+    same label
+    same LightGBM
+    same Optuna
+    same split
+    same calibration
+
+So:
+    BASELINE
+        vs
+    BASELINE + CrossSectional V1
+
+Metrics:
+    Balanced Accuracy
+    Macro F1
+    Log Loss
+    Brier
+    Calibration Bull F1
+    prediction distribution
+    backtest return
+    Sharpe
+    MDD
+
+Ví dụ improvement tốt:
+
+                       BEFORE     AFTER
+Balanced Acc           41.5%      44.0%
+Macro F1               0.40       0.43
+LogLoss                1.091      1.055
+Brier                  0.221      0.210
+Calibration Bull F1    0.13       0.24
+
+Nếu nhiều metric cùng tốt:
+    KEEP.
+
+Nếu BA tăng nhưng:
+    LogLoss xấu hơn
+    Brier xấu hơn
+
+=> chưa chắc nên giữ,
+vì Fusion Expert sau này cần probability quality.
+
+
+====================================================================
+24. TẦNG 3 - CLASS WEIGHT
+====================================================================
+
+Class weighting giúp model không bỏ qua class ít hơn.
+
+Nhưng có thể over-correct.
+
+Test:
+
+    W0 = current class weighting
+    W1 = no class weighting
+    W2 = capped class weighting
+
+Ví dụ cap:
+    max ratio <= 1.5
+hoặc:
+    <= 2.0
+
+Theo dõi:
+    per-class precision
+    per-class recall
+    prediction distribution
+    BA
+    Macro F1
+    LogLoss
+    Brier
+
+Không chữa class bias chỉ bằng trading threshold.
+
+
+====================================================================
+25. TẦNG 4 - HYPERPARAMETER
+====================================================================
+
+Optuna chỉ giúp:
+    khai thác signal tốt hơn.
+
+Optuna không thể:
+    tạo signal từ feature/label không có signal.
+
+Thứ tự:
+    label tốt
+        ->
+    feature tốt
+        ->
+    weight hợp lý
+        ->
+    Optuna.
+
+Không nên:
+    10 trials -> 500 trials ngay.
+
+Sau khi signal tốt hơn:
+    thử 30-50 trials.
+
+
+====================================================================
+26. TẦNG 5 - CLASSIFICATION VÀ TRADING THRESHOLD
+====================================================================
+
+Ví dụ model:
+    Bear = 0.20
+    Side = 0.30
+    Bull = 0.50.
+
+Classification:
+    argmax -> BULL.
+    Dùng để tính:
+        Balanced Accuracy
+        Macro F1
+        LogLoss
+        Brier.
+
+Trading:
+    P(BULL) >= threshold -> BUY.
+
+Threshold ảnh hưởng:
+    trade count
+    return
+    Sharpe
+    MDD
+    turnover.
+
+Threshold không nên làm thay đổi classification argmax metrics.
+
+
+====================================================================
+27. THRESHOLD CHẠM LOWER BOUND
+====================================================================
+
+Nếu search bắt đầu:
+    0.34
+
+và best:
+    0.34
+
+thì không được hiểu:
+    0.34 là threshold tối ưu thật sự.
+
+Có thể chỉ cho thấy:
+    P(BULL) chưa phân tách BULL/non-BULL tốt.
+
+Không nên chỉ hạ threshold xuống 0.20 rồi hy vọng model tốt hơn.
+
+
+====================================================================
+28. KHÔNG CHỌN TRADING THRESHOLD CHỈ BẰNG BULL F1
+====================================================================
+
+Ví dụ threshold 0.34:
+    100 trades
+    precision thấp
+    PnL âm.
+
+Threshold 0.52:
+    15 trades
+    precision cao
+    PnL dương.
+
+Bull F1 của 0.34 có thể cao hơn vì recall.
+
+Trading có thể thích 0.52 hơn.
+
+Sau khi model tốt hơn nên lập bảng:
+
+    threshold
+    signal count
+    precision
+    avg future return
+    net return
+    Sharpe
+    MDD
+    turnover
+
+
+====================================================================
+29. BACKTEST
+====================================================================
+
+Strategy hiện tại:
+
+    P(BULL) >= threshold
+            |
+            v
+          signal
+            |
+            v
+    Buy Open ngày hôm sau
+            |
+            v
+       hold 5 ngày
+            |
+            v
+           sell
+
+Có:
+    fee
+    slippage
+    mark-to-market equity.
+
+Baseline:
+    equal-weight Buy & Hold universe.
+
+Classification tốt không đồng nghĩa trading tốt,
+vì spot strategy hiện chủ yếu kiếm tiền từ Bull signal.
+
+
+====================================================================
+30. BASELINE HIỆN TẠI
+====================================================================
+
+Benchmark gần đây của LightGBM:
+
+    Balanced Accuracy ~41.46%
+    Macro F1          ~0.40
+    LogLoss           ~1.091
+    Brier             ~0.221
+
+No-skill Balanced Accuracy:
+    ~33.33%.
+
+Kết luận:
+    model đã học được một ít structure,
+    nhưng signal chưa đủ mạnh.
+
+Giai đoạn hiện tại:
+    SIGNAL RESEARCH.
+
+
+====================================================================
+31. METRIC NÊN ƯU TIÊN
+====================================================================
+
+MODEL QUALITY:
+
+    1. LogLoss
+    2. Brier
+    3. Balanced Accuracy
+    4. Macro F1
+    5. per-class recall
+
+Lý do:
+    Quant sau này đưa probability vào Fusion Expert.
+
+TRADING QUALITY:
+
+    1. Sharpe
+    2. Max Drawdown
+    3. Net Return vs benchmark
+    4. turnover
+    5. trade count
+
+
+====================================================================
+32. ROADMAP NGHIÊN CỨU
+====================================================================
+
+PHASE A - LABEL
+
+    L0 current
+    L1 vol1 * sqrt(5)
+    L2 historical vol5
+
+Chọn label tốt nhất.
+
+
+PHASE B - FEATURE ABLATION
+
+    ALL
+    ALL - raw OHLCV
+    ALL - momentum
+    ALL - volatility
+    ALL - volume
+    ALL - regime
+    ALL - cross_asset
+
+
+PHASE C - CROSS-SECTIONAL V1
+
+    return_rank_1d
+    return_rank_5d
+    relative_return_market_1d
+    relative_return_market_5d
+    relative_volume_rank
+    volatility_rank
+    return_dispersion
+    breadth_change
+
+
+PHASE D - CROSS-SECTIONAL V2
+
+Chỉ nếu V1 tốt:
+    momentum ranks
+    rank changes
+    beta BTC
+    corr BTC
+    abnormal BTC-relative return
+    dispersion changes
+
+
+PHASE E - CLASS WEIGHT
+
+    ON
+    OFF
+    capped
+
+
+PHASE F - MODEL / OPTUNA
+
+Giữ chính:
+    LightGBM
+    XGBoost
+
+Tăng:
+    30-50 trials.
+
+
+PHASE G - PROBABILITY CALIBRATION
+
+Có thể nghiên cứu:
+    sigmoid
+    isotonic
+    temperature scaling
+
+So:
+    LogLoss
+    Brier
+    reliability.
+
+
+PHASE H - TRADING POLICY
+
+Sau cùng mới thử:
+    threshold
+    confidence margin
+    regime gating
+    position sizing.
+
+Ví dụ:
+    Pbull >= 0.45
+    AND Pbull - Pbear >= 0.10
+    AND breadth > 0.5
+        -> BUY.
+
+
+PHASE I - SHADOW REALTIME
+
+Chỉ khi:
+    OOF tốt
+    calibration tốt
+    DEV tốt
+    backtest tốt
+    stability theo regime ổn.
+
+
+====================================================================
+33. NGUYÊN TẮC EXPERIMENT
+====================================================================
+
+SAI:
+
+    đổi label
+    + thêm features
+    + đổi model
+    + tăng Optuna
+    + đổi threshold
+
+rồi metric tăng nhưng không biết nguyên nhân.
+
+ĐÚNG:
+
+Baseline:
+    BA = 41.46
+    LL = 1.091
+
+Experiment 1:
+    Label B
+
+Nếu:
+    BA = 43.2
+    LL = 1.065
+=> KEEP.
+
+Experiment 2:
+    remove raw OHLCV
+
+Nếu:
+    BA = 43.8
+    LL = 1.058
+=> KEEP.
+
+Experiment 3:
+    Cross-sectional V1
+
+Nếu:
+    BA = 45.0
+    LL = 1.041
+=> KEEP.
+
+Experiment 4:
+    add redundant technical features
+
+Nếu metric xấu:
+=> REJECT.
+
+
+====================================================================
+34. EXPERIMENT LOG NÊN LƯU
+====================================================================
+
+Mỗi experiment nên ghi:
+
+    experiment_id
+    date
+    universe
+    label_version
+    feature_version
+    model
+    optuna_trials
+    class_weight
+    threshold_method
+
+    OOF_LogLoss
+    OOF_Brier
+    OOF_BA
+    OOF_MacroF1
+
+    Calibration_BullF1
+
+    DEV_LogLoss
+    DEV_Brier
+    DEV_BA
+    DEV_MacroF1
+
+    Backtest_Return
+    Benchmark_Return
+    Sharpe
+    MaxDrawdown
+    Trades
+    Turnover
+
+    decision:
+        KEEP
+        REJECT
+
+
+====================================================================
+35. THỨ TỰ CHẠY ĐỀ XUẤT
+====================================================================
+
+ROUND 1:
+    Lưu baseline hiện tại.
+
+ROUND 2:
+    Label B.
+
+ROUND 3:
+    Label C.
+
+Chọn label tốt nhất.
+
+ROUND 4:
+    Raw OHLCV OFF.
+
+ROUND 5:
+    Feature-group ablation.
+
+ROUND 6:
+    CrossSectional V1.
+
+ROUND 7:
+    Class Weight ON/OFF.
+
+ROUND 8:
+    XGBoost confirm.
+
+ROUND 9:
+    Optuna 30-50 trials.
+
+ROUND 10:
+    Probability calibration.
+
+ROUND 11:
+    Trading policy.
+
+
+====================================================================
+36. ĐIỀU KIỆN KEEP MỘT THAY ĐỔI
+====================================================================
+
+Không KEEP chỉ vì Accuracy tăng.
+
+Ưu tiên khi:
+    LogLoss giảm
+    Brier giảm
+
+và ít nhất một số:
+    Balanced Accuracy tăng
+    Macro F1 tăng
+    per-class recall tốt hơn.
+
+Đồng thời:
+    không class-collapse
+    không tăng variance quá mạnh
+    không làm backtest xấu rõ rệt.
+
+
+====================================================================
+37. ĐIỀU KIỆN CROSS-SECTIONAL V1 CÓ GIÁ TRỊ
+====================================================================
+
+Không cần tăng cực lớn.
+
+Nếu:
+    LogLoss giảm ổn định
+    Brier giảm
+    BA tăng khoảng 1-3 percentage points
+    Macro F1 không giảm
+    calibration tốt hơn
+
+và lặp lại ở nhiều walk-forward folds:
+
+    KEEP.
+
+
+====================================================================
+38. CHECKLIST TRƯỚC MỖI TRAIN
+====================================================================
+
+[ ] Universe đúng 10 coin.
+[ ] Timeframe vẫn 1d.
+[ ] Forecast horizon vẫn 5d.
+[ ] Chỉ đổi đúng biến đang experiment.
+[ ] Train / Calibration / DEV split không đổi.
+[ ] Random seed không đổi.
+[ ] Model baseline không đổi khi test label/feature.
+[ ] Log class distribution.
+[ ] Log prediction distribution.
+[ ] Log LogLoss.
+[ ] Log Brier.
+[ ] Log Balanced Accuracy.
+[ ] Log Macro F1.
+[ ] Log Calibration Bull F1.
+[ ] Log backtest return.
+[ ] Log benchmark return.
+[ ] Log Sharpe.
+[ ] Log Max Drawdown.
+[ ] Ghi KEEP / REJECT.
+
+
+====================================================================
+39. CHECKLIST CROSS-SECTIONAL
+====================================================================
+
+[ ] Rank tính theo từng timestamp.
+[ ] Không rank toàn lịch sử.
+[ ] Không dùng future values.
+[ ] Missing candle không được fill từ tương lai.
+[ ] Relative volume dùng normalized volume.
+[ ] Không ưu tiên raw volume rank.
+[ ] Universe giữ cố định giữa experiment.
+[ ] Feature names rõ ràng.
+[ ] Có feature version.
+[ ] Có before/after benchmark.
+
+
+====================================================================
+40. BENCHMARK TEMPLATE
+====================================================================
+
+Experiment:
+    ______________________
+
+Label:
+    ______________________
+
+Feature Set:
+    ______________________
+
+Model:
+    ______________________
+
+
+MODEL METRICS
+
+Balanced Accuracy:
+    __________
+
+Macro F1:
+    __________
+
+LogLoss:
+    __________
+
+Brier:
+    __________
+
+Bear Recall:
+    __________
+
+Side Recall:
+    __________
+
+Bull Recall:
+    __________
+
+
+CALIBRATION
+
+Best Threshold:
+    __________
+
+Bull F1:
+    __________
+
+Signal Count:
+    __________
+
+
+BACKTEST
+
+Strategy Return:
+    __________
+
+Benchmark Return:
+    __________
+
+Sharpe:
+    __________
+
+Max Drawdown:
+    __________
+
+Trades:
+    __________
+
+Turnover:
+    __________
+
+
+DECISION
+
+    [ ] KEEP
+    [ ] REJECT
+    [ ] NEED MORE TEST
+
+
+NOTES
+
+    ________________________________________
+    ________________________________________
+    ________________________________________
+
+
+====================================================================
+41. KẾT LUẬN
+====================================================================
+
+Hướng hiện tại được giữ:
+
+    10 coin
+    daily candles
+    dự đoán 5 ngày
+    3-class classification.
+
+Không cần thay kiến trúc ngay.
+
+Hai hướng nghiên cứu đáng ưu tiên nhất:
+
+    1. LABEL DESIGN
+    2. CROSS-SECTIONAL FEATURE ENGINEERING
+
+Cross-sectional đặc biệt phù hợp vì model không chỉ nhìn:
+
+    "SOL hôm nay tăng bao nhiêu?"
+
+mà còn nhìn:
+
+    "SOL mạnh thứ mấy trong 10 coin?"
+    "SOL vượt market bao nhiêu?"
+    "Volume của SOL bất thường thế nào?"
+    "Volatility của SOL đứng ở đâu?"
+    "Market đang đồng thuận hay phân hóa?"
+
+5 feature nên làm đầu tiên:
+
+    1. return_rank_1d
+    2. return_rank_5d
+    3. relative_return_to_market_5d
+    4. relative_volume_rank
+    5. market_return_dispersion
+
+Sau đó benchmark trước/sau.
+
+Nếu tốt:
+    KEEP.
+
+Nếu không:
+    ROLLBACK.
+
+Mục tiêu không phải chỉ tăng Accuracy.
+
+Mục tiêu là cải thiện đồng thời:
+
+    LogLoss
+    Brier
+    Balanced Accuracy
+    Macro F1
+    probability calibration
+    risk-adjusted backtest performance.
+

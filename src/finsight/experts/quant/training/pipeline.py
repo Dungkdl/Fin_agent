@@ -24,7 +24,9 @@ class TrainingPipeline:
         self.final_holdout_months = val_config.get("final_holdout_months", 3)
         
         # Sử dụng Factory pattern để lấy đúng model từ file YAML config
-        self.model = get_quant_model(config.get("model", {}))
+        model_cfg = config.get("model", {}).copy()
+        model_cfg["include_raw_ohlcv"] = config.get("features", {}).get("include_raw_ohlcv", True)
+        self.model = get_quant_model(model_cfg)
         
         # Khởi tạo splitter, forecast_horizon = embargo_steps (quy đổi tương đối, giả sử 5 nến = 5)
         # Trong thực tế, embargo_steps phải đổi từ time string (e.g. "5d") sang số nến hoặc dùng date offset.
@@ -95,9 +97,22 @@ class TrainingPipeline:
             df_calibration = pd.DataFrame()
             df_holdout = pd.DataFrame()
             
+        # In Class Distribution
+        if "direction_label" in df_train_inner.columns:
+            label_counts = df_train_inner["direction_label"].value_counts(normalize=True) * 100
+            dist_str = ", ".join([f"{k}: {v:.1f}%" for k, v in label_counts.items()])
+            logger.info(f"Class Distribution trên Train/Optuna: {dist_str}")
+            
         # 2. Huấn luyện mô hình (Kèm Optuna Tuning) trên Train/Optuna
-        logger.info("Bắt đầu huấn luyện mô hình với Walk-Forward CV trên tập Train/Optuna...")
-        self.model.train(df_train_inner, cv_splitter=self.splitter)
+        skip_optuna = self.config.get("skip_optuna", False)
+        cv = None if skip_optuna else self.splitter
+        
+        if skip_optuna:
+            logger.info("Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...")
+        else:
+            logger.info("Bắt đầu huấn luyện mô hình với Walk-Forward CV trên tập Train/Optuna...")
+            
+        self.model.train(df_train_inner, cv_splitter=cv)
         
         # 3. Lấy probabilities trên tập Calibration để dò Threshold
         best_th = 0.50

@@ -28,11 +28,21 @@ data:
   validate_checksum: true
 features:
   version: crypto_quant_features_v1
+  include_price: true
+  include_volatility: true
+  include_momentum: true
+  include_volume: true
+  include_time: true
+  include_regime: true
+  include_cross_asset: false
+  include_raw_ohlcv: false  # Đặt false để ép model không học thuộc giá trị tuyệt đối (như BTC giá 60k)
 labels:
   type: volatility_adjusted_direction
+  label_type: "current"  # Tầng 2: Dùng L0 để đánh giá Feature qua LogLoss chuẩn xác nhất
   positive_threshold: 0.5
   negative_threshold: -0.5
   volatility_window: 48
+skip_optuna: true  # BẮT BUỘC TRUE ở Tầng 2 để "Cô lập biến số" siêu tham số
 validation:
   type: expanding_walk_forward
   min_train_months: 12

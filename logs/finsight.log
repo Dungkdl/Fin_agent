@@ -4078,3 +4078,1445 @@
 2026-08-15 19:46:44,008 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
 2026-08-15 19:46:44,014 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_logistic_regression/v1
 2026-08-15 19:46:44,015 INFO finsight.cli.quant_commands - [DONE] All Batch Training completed!
+2026-08-17 16:24:43,604 INFO finsight.cli.quant_commands - Building dataset for model: crypto_quant_1d_5d
+2026-08-17 16:24:50,853 INFO finsight.experts.quant.datasets.builder - Đã lọc dữ liệu theo history_years=5. Số lượng mẫu sau khi lọc: 18270
+2026-08-17 16:24:51,043 INFO finsight.cli.quant_commands - Dataset successfully built at: data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 16:25:45,060 INFO finsight.cli.quant_commands - Starting pipeline for Engine: LIGHTGBM
+2026-08-17 16:25:45,060 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 16:25:45,149 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 16:25:45,149 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 16:25:45,150 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 16:25:45,153 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: SIDEWAYS: 44.8%, BEARISH: 28.0%, BULLISH: 27.2%
+2026-08-17 16:25:45,153 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 16:25:45,159 INFO finsight.experts.quant.models.lightgbm_model - Training final LightGBM model on full training set...
+2026-08-17 16:25:46,080 INFO finsight.experts.quant.models.lightgbm_model - [Verification] Actual LightGBM trees built: 300
+2026-08-17 16:25:46,080 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 16:25:46,093 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 16:25:46,156 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.10) trên 840 mẫu Calibration.
+2026-08-17 16:25:46,156 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_lightgbm/v1
+2026-08-17 16:25:49,442 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 16:25:49,729 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 34.98% | Macro F1: 0.29
+2026-08-17 16:25:49,730 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.150 | Brier Score: 0.237
+2026-08-17 16:25:49,730 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.38108882521489973, 'SIDEWAYS': 0.5138888888888888, 'BULLISH': 0.2}
+2026-08-17 16:25:49,730 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.7732558139534884, 'SIDEWAYS': 0.0891566265060241, 'BULLISH': 0.1871345029239766}
+2026-08-17 16:25:49,730 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[266  25  53]
+ [303  37  75]
+ [129  10  32]]
+2026-08-17 16:25:49,731 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 16:25:49,927 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 16:25:49,928 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.9764
+2026-08-17 16:25:49,928 INFO finsight.experts.quant.training.pipeline - Net Return    : -2.36%
+2026-08-17 16:25:49,928 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 16:25:49,928 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -13.17%
+2026-08-17 16:25:49,928 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -0.01
+2026-08-17 16:25:49,929 INFO finsight.experts.quant.training.pipeline - Win Rate      : 32.20%
+2026-08-17 16:25:49,929 INFO finsight.experts.quant.training.pipeline - Total Trades  : 59
+2026-08-17 16:25:49,929 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -1.16%
+2026-08-17 16:25:49,929 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 16:25:49,929 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 16:25:49,932 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 16:25:50,726 INFO finsight.experts.quant.training.shap_explainer - Lưu SHAP feature importance tại artifacts\models\crypto\crypto_quant_1d_5d_lightgbm\v1\shap_importance.json
+2026-08-17 16:25:50,733 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 16:25:50,736 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 16:25:50,736 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_lightgbm/v1
+2026-08-17 16:25:50,737 INFO finsight.cli.quant_commands - Starting pipeline for Engine: XGBOOST
+2026-08-17 16:25:50,738 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 16:25:50,787 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 16:25:50,787 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 16:25:50,788 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 16:25:50,789 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: SIDEWAYS: 44.8%, BEARISH: 28.0%, BULLISH: 27.2%
+2026-08-17 16:25:50,789 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 16:25:50,793 INFO finsight.experts.quant.models.xgboost_model - Training final XGBoost model on full training set...
+2026-08-17 16:25:54,568 INFO finsight.experts.quant.models.xgboost_model - [Verification] Actual XGBoost estimators requested: 100
+2026-08-17 16:25:54,569 INFO finsight.experts.quant.models.xgboost_model - [Verification] Actual XGBoost trees built (approx): 100
+2026-08-17 16:25:54,569 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 16:25:54,590 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 16:25:54,653 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.18) trên 840 mẫu Calibration.
+2026-08-17 16:25:54,654 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_xgboost/v1
+2026-08-17 16:25:54,735 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 16:25:54,970 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 34.80% | Macro F1: 0.29
+2026-08-17 16:25:54,970 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.223 | Brier Score: 0.250
+2026-08-17 16:25:54,971 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.3787425149700599, 'SIDEWAYS': 0.5783132530120482, 'BULLISH': 0.18435754189944134}
+2026-08-17 16:25:54,971 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.7354651162790697, 'SIDEWAYS': 0.11566265060240964, 'BULLISH': 0.19298245614035087}
+2026-08-17 16:25:54,971 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[253  22  69]
+ [290  48  77]
+ [125  13  33]]
+2026-08-17 16:25:54,972 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 16:25:55,117 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 16:25:55,118 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.9398
+2026-08-17 16:25:55,118 INFO finsight.experts.quant.training.pipeline - Net Return    : -6.02%
+2026-08-17 16:25:55,118 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 16:25:55,119 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -19.74%
+2026-08-17 16:25:55,119 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -0.30
+2026-08-17 16:25:55,119 INFO finsight.experts.quant.training.pipeline - Win Rate      : 38.18%
+2026-08-17 16:25:55,120 INFO finsight.experts.quant.training.pipeline - Total Trades  : 55
+2026-08-17 16:25:55,120 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -0.71%
+2026-08-17 16:25:55,120 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 16:25:55,121 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 16:25:55,123 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 16:25:55,737 INFO finsight.experts.quant.training.shap_explainer - Lưu SHAP feature importance tại artifacts\models\crypto\crypto_quant_1d_5d_xgboost\v1\shap_importance.json
+2026-08-17 16:25:55,739 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 16:25:55,743 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 16:25:55,749 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_xgboost/v1
+2026-08-17 16:25:55,750 INFO finsight.cli.quant_commands - Starting pipeline for Engine: CATBOOST
+2026-08-17 16:25:55,751 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 16:25:55,805 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 16:25:55,805 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 16:25:55,805 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 16:25:55,808 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: SIDEWAYS: 44.8%, BEARISH: 28.0%, BULLISH: 27.2%
+2026-08-17 16:25:55,808 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 16:25:55,818 INFO finsight.experts.quant.models.catboost_model - Training final CatBoost model on full training set...
+2026-08-17 16:26:01,062 INFO finsight.experts.quant.models.catboost_model - [Verification] Actual CatBoost trees built: 100
+2026-08-17 16:26:01,063 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 16:26:01,070 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 16:26:01,112 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.08) trên 840 mẫu Calibration.
+2026-08-17 16:26:01,112 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_catboost/v1
+2026-08-17 16:26:01,116 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 16:26:01,285 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 33.83% | Macro F1: 0.23
+2026-08-17 16:26:01,285 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.131 | Brier Score: 0.230
+2026-08-17 16:26:01,285 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.3780332056194125, 'SIDEWAYS': 0.25, 'BULLISH': 0.18181818181818182}
+2026-08-17 16:26:01,286 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.8604651162790697, 'SIDEWAYS': 0.0024096385542168677, 'BULLISH': 0.15204678362573099}
+2026-08-17 16:26:01,286 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[296   2  46]
+ [343   1  71]
+ [144   1  26]]
+2026-08-17 16:26:01,286 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 16:26:01,428 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 16:26:01,428 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.6464
+2026-08-17 16:26:01,428 INFO finsight.experts.quant.training.pipeline - Net Return    : -35.36%
+2026-08-17 16:26:01,429 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 16:26:01,429 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -35.57%
+2026-08-17 16:26:01,429 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -3.70
+2026-08-17 16:26:01,430 INFO finsight.experts.quant.training.pipeline - Win Rate      : 32.61%
+2026-08-17 16:26:01,430 INFO finsight.experts.quant.training.pipeline - Total Trades  : 46
+2026-08-17 16:26:01,430 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -1.98%
+2026-08-17 16:26:01,430 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 16:26:01,431 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 16:26:01,433 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 16:26:01,433 INFO finsight.experts.quant.training.shap_explainer - Bỏ qua SHAP Explainer cho CatBoost để tránh lỗi silent crash (segmentation fault) trên thư viện SHAP hiện tại.
+2026-08-17 16:26:01,433 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 16:26:01,436 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 16:26:01,440 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_catboost/v1
+2026-08-17 16:26:01,441 INFO finsight.cli.quant_commands - Starting pipeline for Engine: LOGISTIC_REGRESSION
+2026-08-17 16:26:01,444 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 16:26:01,492 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 16:26:01,493 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 16:26:01,493 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 16:26:01,496 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: SIDEWAYS: 44.8%, BEARISH: 28.0%, BULLISH: 27.2%
+2026-08-17 16:26:01,496 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 16:26:01,498 INFO finsight.experts.quant.models.logistic_regression - Training final Logistic Regression model on full training set...
+2026-08-17 16:26:02,341 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 16:26:02,348 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 16:26:02,390 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.14) trên 840 mẫu Calibration.
+2026-08-17 16:26:02,390 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_logistic_regression/v1
+2026-08-17 16:26:02,397 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 16:26:02,561 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 33.87% | Macro F1: 0.29
+2026-08-17 16:26:02,562 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.098 | Brier Score: 0.221
+2026-08-17 16:26:02,562 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.44285714285714284, 'SIDEWAYS': 0.4731494920174166, 'BULLISH': 0.14035087719298245}
+2026-08-17 16:26:02,563 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.09011627906976744, 'SIDEWAYS': 0.7855421686746988, 'BULLISH': 0.14035087719298245}
+2026-08-17 16:26:02,563 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[ 31 227  86]
+ [ 28 326  61]
+ [ 11 136  24]]
+2026-08-17 16:26:02,563 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 16:26:02,737 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 16:26:02,737 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.7242
+2026-08-17 16:26:02,738 INFO finsight.experts.quant.training.pipeline - Net Return    : -27.58%
+2026-08-17 16:26:02,738 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 16:26:02,739 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -33.47%
+2026-08-17 16:26:02,739 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -2.38
+2026-08-17 16:26:02,739 INFO finsight.experts.quant.training.pipeline - Win Rate      : 29.21%
+2026-08-17 16:26:02,739 INFO finsight.experts.quant.training.pipeline - Total Trades  : 89
+2026-08-17 16:26:02,740 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -2.52%
+2026-08-17 16:26:02,740 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 16:26:02,740 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 16:26:02,743 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 16:26:02,743 INFO finsight.experts.quant.training.shap_explainer - Bỏ qua SHAP Explainer vì mô hình là dạng Pipeline/Linear (không hỗ trợ TreeExplainer).
+2026-08-17 16:26:02,743 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 16:26:02,746 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 16:26:02,749 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_logistic_regression/v1
+2026-08-17 16:26:02,750 INFO finsight.cli.quant_commands - [DONE] All Batch Training completed!
+2026-08-17 16:35:19,605 INFO finsight.cli.quant_commands - Building dataset for model: crypto_quant_1d_5d
+2026-08-17 16:35:22,069 INFO finsight.experts.quant.datasets.builder - Đã lọc dữ liệu theo history_years=5. Số lượng mẫu sau khi lọc: 18270
+2026-08-17 16:35:22,298 INFO finsight.cli.quant_commands - Dataset successfully built at: data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 16:35:28,919 INFO finsight.cli.quant_commands - Starting pipeline for Engine: LIGHTGBM
+2026-08-17 16:35:28,920 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 16:35:29,011 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 16:35:29,011 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 16:35:29,012 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 16:35:29,015 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: SIDEWAYS: 42.3%, BEARISH: 29.4%, BULLISH: 28.2%
+2026-08-17 16:35:29,015 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 16:35:29,021 INFO finsight.experts.quant.models.lightgbm_model - Training final LightGBM model on full training set...
+2026-08-17 16:35:29,735 INFO finsight.experts.quant.models.lightgbm_model - [Verification] Actual LightGBM trees built: 300
+2026-08-17 16:35:29,735 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 16:35:29,746 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 16:35:29,805 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.09) trên 840 mẫu Calibration.
+2026-08-17 16:35:29,805 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_lightgbm/v1
+2026-08-17 16:35:31,166 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 16:35:31,369 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 33.69% | Macro F1: 0.27
+2026-08-17 16:35:31,370 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.160 | Brier Score: 0.238
+2026-08-17 16:35:31,370 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.3755274261603376, 'SIDEWAYS': 0.5492957746478874, 'BULLISH': 0.14189189189189189}
+2026-08-17 16:35:31,370 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.7922848664688428, 'SIDEWAYS': 0.0911214953271028, 'BULLISH': 0.12727272727272726}
+2026-08-17 16:35:31,371 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[267  22  48]
+ [310  39  79]
+ [134  10  21]]
+2026-08-17 16:35:31,371 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 16:35:31,504 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 16:35:31,504 INFO finsight.experts.quant.training.pipeline - Final Equity  : 1.1092
+2026-08-17 16:35:31,504 INFO finsight.experts.quant.training.pipeline - Net Return    : 10.92%
+2026-08-17 16:35:31,504 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 16:35:31,504 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -13.05%
+2026-08-17 16:35:31,505 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : 1.14
+2026-08-17 16:35:31,505 INFO finsight.experts.quant.training.pipeline - Win Rate      : 42.00%
+2026-08-17 16:35:31,505 INFO finsight.experts.quant.training.pipeline - Total Trades  : 50
+2026-08-17 16:35:31,505 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -0.02%
+2026-08-17 16:35:31,505 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 16:35:31,506 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 16:35:31,508 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 16:35:32,093 INFO finsight.experts.quant.training.shap_explainer - Lưu SHAP feature importance tại artifacts\models\crypto\crypto_quant_1d_5d_lightgbm\v1\shap_importance.json
+2026-08-17 16:35:32,097 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 16:35:32,100 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 16:35:32,100 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_lightgbm/v1
+2026-08-17 16:35:32,101 INFO finsight.cli.quant_commands - Starting pipeline for Engine: XGBOOST
+2026-08-17 16:35:32,102 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 16:35:32,168 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 16:35:32,168 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 16:35:32,169 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 16:35:32,171 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: SIDEWAYS: 42.3%, BEARISH: 29.4%, BULLISH: 28.2%
+2026-08-17 16:35:32,171 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 16:35:32,176 INFO finsight.experts.quant.models.xgboost_model - Training final XGBoost model on full training set...
+2026-08-17 16:35:35,412 INFO finsight.experts.quant.models.xgboost_model - [Verification] Actual XGBoost estimators requested: 100
+2026-08-17 16:35:35,413 INFO finsight.experts.quant.models.xgboost_model - [Verification] Actual XGBoost trees built (approx): 100
+2026-08-17 16:35:35,414 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 16:35:35,430 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 16:35:35,493 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.18) trên 840 mẫu Calibration.
+2026-08-17 16:35:35,493 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_xgboost/v1
+2026-08-17 16:35:35,572 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 16:35:35,801 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 35.90% | Macro F1: 0.30
+2026-08-17 16:35:35,801 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.226 | Brier Score: 0.252
+2026-08-17 16:35:35,801 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.38930163447251115, 'SIDEWAYS': 0.5408163265306123, 'BULLISH': 0.18238993710691823}
+2026-08-17 16:35:35,801 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.7774480712166172, 'SIDEWAYS': 0.12383177570093458, 'BULLISH': 0.17575757575757575}
+2026-08-17 16:35:35,801 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[262  26  49]
+ [294  53  81]
+ [117  19  29]]
+2026-08-17 16:35:35,802 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 16:35:35,959 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 16:35:35,959 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.8707
+2026-08-17 16:35:35,959 INFO finsight.experts.quant.training.pipeline - Net Return    : -12.93%
+2026-08-17 16:35:35,960 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 16:35:35,960 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -28.00%
+2026-08-17 16:35:35,960 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -1.23
+2026-08-17 16:35:35,961 INFO finsight.experts.quant.training.pipeline - Win Rate      : 38.18%
+2026-08-17 16:35:35,961 INFO finsight.experts.quant.training.pipeline - Total Trades  : 55
+2026-08-17 16:35:35,961 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -0.94%
+2026-08-17 16:35:35,961 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 16:35:35,961 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 16:35:35,964 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 16:35:36,618 INFO finsight.experts.quant.training.shap_explainer - Lưu SHAP feature importance tại artifacts\models\crypto\crypto_quant_1d_5d_xgboost\v1\shap_importance.json
+2026-08-17 16:35:36,621 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 16:35:36,624 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 16:35:36,629 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_xgboost/v1
+2026-08-17 16:35:36,630 INFO finsight.cli.quant_commands - Starting pipeline for Engine: CATBOOST
+2026-08-17 16:35:36,632 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 16:35:36,698 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 16:35:36,699 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 16:35:36,699 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 16:35:36,702 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: SIDEWAYS: 42.3%, BEARISH: 29.4%, BULLISH: 28.2%
+2026-08-17 16:35:36,702 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 16:35:36,713 INFO finsight.experts.quant.models.catboost_model - Training final CatBoost model on full training set...
+2026-08-17 16:35:41,898 INFO finsight.experts.quant.models.catboost_model - [Verification] Actual CatBoost trees built: 100
+2026-08-17 16:35:41,900 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 16:35:41,909 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 16:35:41,948 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.15) trên 840 mẫu Calibration.
+2026-08-17 16:35:41,948 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_catboost/v1
+2026-08-17 16:35:41,953 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 16:35:42,120 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 33.73% | Macro F1: 0.23
+2026-08-17 16:35:42,120 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.130 | Brier Score: 0.230
+2026-08-17 16:35:42,121 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.37285902503293805, 'SIDEWAYS': 0.5, 'BULLISH': 0.16568047337278108}
+2026-08-17 16:35:42,121 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.8397626112759644, 'SIDEWAYS': 0.002336448598130841, 'BULLISH': 0.1696969696969697}
+2026-08-17 16:35:42,122 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[283   1  53]
+ [339   1  88]
+ [137   0  28]]
+2026-08-17 16:35:42,122 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 16:35:42,271 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 16:35:42,271 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.7915
+2026-08-17 16:35:42,271 INFO finsight.experts.quant.training.pipeline - Net Return    : -20.85%
+2026-08-17 16:35:42,272 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 16:35:42,272 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -29.28%
+2026-08-17 16:35:42,272 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -2.32
+2026-08-17 16:35:42,273 INFO finsight.experts.quant.training.pipeline - Win Rate      : 29.23%
+2026-08-17 16:35:42,273 INFO finsight.experts.quant.training.pipeline - Total Trades  : 65
+2026-08-17 16:35:42,273 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -1.59%
+2026-08-17 16:35:42,273 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 16:35:42,274 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 16:35:42,276 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 16:35:42,276 INFO finsight.experts.quant.training.shap_explainer - Bỏ qua SHAP Explainer cho CatBoost để tránh lỗi silent crash (segmentation fault) trên thư viện SHAP hiện tại.
+2026-08-17 16:35:42,277 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 16:35:42,279 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 16:35:42,284 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_catboost/v1
+2026-08-17 16:35:42,285 INFO finsight.cli.quant_commands - Starting pipeline for Engine: LOGISTIC_REGRESSION
+2026-08-17 16:35:42,287 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 16:35:42,343 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 16:35:42,344 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 16:35:42,344 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 16:35:42,346 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: SIDEWAYS: 42.3%, BEARISH: 29.4%, BULLISH: 28.2%
+2026-08-17 16:35:42,346 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 16:35:42,348 INFO finsight.experts.quant.models.logistic_regression - Training final Logistic Regression model on full training set...
+2026-08-17 16:35:43,283 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 16:35:43,291 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 16:35:43,324 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.17) trên 840 mẫu Calibration.
+2026-08-17 16:35:43,325 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_logistic_regression/v1
+2026-08-17 16:35:43,331 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 16:35:43,495 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 33.87% | Macro F1: 0.32
+2026-08-17 16:35:43,495 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.095 | Brier Score: 0.221
+2026-08-17 16:35:43,496 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.4017094017094017, 'SIDEWAYS': 0.49312714776632305, 'BULLISH': 0.1471861471861472}
+2026-08-17 16:35:43,496 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.1394658753709199, 'SIDEWAYS': 0.6705607476635514, 'BULLISH': 0.20606060606060606}
+2026-08-17 16:35:43,497 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[ 47 183 107]
+ [ 51 287  90]
+ [ 19 112  34]]
+2026-08-17 16:35:43,497 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 16:35:43,677 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 16:35:43,677 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.6706
+2026-08-17 16:35:43,677 INFO finsight.experts.quant.training.pipeline - Net Return    : -32.94%
+2026-08-17 16:35:43,678 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 16:35:43,678 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -34.65%
+2026-08-17 16:35:43,678 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -3.30
+2026-08-17 16:35:43,678 INFO finsight.experts.quant.training.pipeline - Win Rate      : 29.09%
+2026-08-17 16:35:43,678 INFO finsight.experts.quant.training.pipeline - Total Trades  : 110
+2026-08-17 16:35:43,678 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -2.47%
+2026-08-17 16:35:43,679 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 16:35:43,679 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 16:35:43,681 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 16:35:43,682 INFO finsight.experts.quant.training.shap_explainer - Bỏ qua SHAP Explainer vì mô hình là dạng Pipeline/Linear (không hỗ trợ TreeExplainer).
+2026-08-17 16:35:43,682 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 16:35:43,684 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 16:35:43,688 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_logistic_regression/v1
+2026-08-17 16:35:43,689 INFO finsight.cli.quant_commands - [DONE] All Batch Training completed!
+2026-08-17 16:42:51,354 INFO finsight.cli.quant_commands - Starting pipeline for Engine: LIGHTGBM
+2026-08-17 16:42:51,355 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 16:42:51,432 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 16:42:51,432 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 16:42:51,432 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 16:42:51,434 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: SIDEWAYS: 42.3%, BEARISH: 29.4%, BULLISH: 28.2%
+2026-08-17 16:42:51,434 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình với Walk-Forward CV trên tập Train/Optuna...
+2026-08-17 16:42:51,437 INFO finsight.experts.quant.models.lightgbm_model - Starting Optuna Hyperparameter Tuning...
+2026-08-17 16:43:23,599 INFO finsight.experts.quant.models.lightgbm_model - Best Optuna Params: {'learning_rate': 0.06579356575228044, 'num_leaves': 19, 'max_depth': 6, 'min_child_samples': 500, 'subsample': 0.7591235688978748, 'colsample_bytree': 0.8559281261723954}
+2026-08-17 16:43:23,600 INFO finsight.experts.quant.models.lightgbm_model - Training final LightGBM model on full training set...
+2026-08-17 16:43:23,703 INFO finsight.experts.quant.models.lightgbm_model - [Verification] Actual LightGBM trees built: 12
+2026-08-17 16:43:23,704 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 16:43:23,713 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 16:43:23,774 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.25) trên 840 mẫu Calibration.
+2026-08-17 16:43:23,775 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_lightgbm/v1
+2026-08-17 16:43:24,609 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 16:43:24,897 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 40.83% | Macro F1: 0.36
+2026-08-17 16:43:24,897 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.095 | Brier Score: 0.222
+2026-08-17 16:43:24,897 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.47289156626506024, 'SIDEWAYS': 0.5529411764705883, 'BULLISH': 0.20794392523364486}
+2026-08-17 16:43:24,898 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.4658753709198813, 'SIDEWAYS': 0.21962616822429906, 'BULLISH': 0.5393939393939394}
+2026-08-17 16:43:24,898 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[157  55 125]
+ [120  94 214]
+ [ 55  21  89]]
+2026-08-17 16:43:24,898 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 16:43:25,081 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 16:43:25,082 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.8275
+2026-08-17 16:43:25,082 INFO finsight.experts.quant.training.pipeline - Net Return    : -17.25%
+2026-08-17 16:43:25,082 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 16:43:25,082 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -26.24%
+2026-08-17 16:43:25,083 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -1.65
+2026-08-17 16:43:25,083 INFO finsight.experts.quant.training.pipeline - Win Rate      : 41.84%
+2026-08-17 16:43:25,083 INFO finsight.experts.quant.training.pipeline - Total Trades  : 98
+2026-08-17 16:43:25,083 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -0.48%
+2026-08-17 16:43:25,083 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 16:43:25,083 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 16:43:25,085 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 16:43:25,101 INFO finsight.experts.quant.training.shap_explainer - Lưu SHAP feature importance tại artifacts\models\crypto\crypto_quant_1d_5d_lightgbm\v1\shap_importance.json
+2026-08-17 16:43:25,103 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 16:43:25,107 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 16:43:25,108 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_lightgbm/v1
+2026-08-17 16:43:25,108 INFO finsight.cli.quant_commands - Starting pipeline for Engine: XGBOOST
+2026-08-17 16:43:25,109 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 16:43:25,174 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 16:43:25,174 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 16:43:25,174 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 16:43:25,177 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: SIDEWAYS: 42.3%, BEARISH: 29.4%, BULLISH: 28.2%
+2026-08-17 16:43:25,177 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình với Walk-Forward CV trên tập Train/Optuna...
+2026-08-17 16:43:25,184 INFO finsight.experts.quant.models.xgboost_model - Starting Optuna Hyperparameter Tuning for XGBoost...
+2026-08-17 16:45:21,514 INFO finsight.experts.quant.models.xgboost_model - Best Optuna Params (XGBoost): {'learning_rate': 0.061633065325620406, 'max_depth': 6, 'min_child_weight': 7, 'subsample': 0.965782517681538, 'colsample_bytree': 0.7603009889173965}
+2026-08-17 16:45:21,515 INFO finsight.experts.quant.models.xgboost_model - Training final XGBoost model on full training set...
+2026-08-17 16:45:21,734 INFO finsight.experts.quant.models.xgboost_model - [Verification] Actual XGBoost estimators requested: 6
+2026-08-17 16:45:21,735 INFO finsight.experts.quant.models.xgboost_model - [Verification] Actual XGBoost trees built (approx): 6
+2026-08-17 16:45:21,735 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 16:45:21,749 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 16:45:21,814 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.17) trên 840 mẫu Calibration.
+2026-08-17 16:45:21,814 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_xgboost/v1
+2026-08-17 16:45:21,821 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 16:45:22,059 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 35.88% | Macro F1: 0.27
+2026-08-17 16:45:22,059 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.101 | Brier Score: 0.223
+2026-08-17 16:45:22,060 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.38266666666666665, 'SIDEWAYS': 0.4666666666666667, 'BULLISH': 0.21481481481481482}
+2026-08-17 16:45:22,060 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.8516320474777448, 'SIDEWAYS': 0.04906542056074766, 'BULLISH': 0.17575757575757575}
+2026-08-17 16:45:22,060 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[287  16  34]
+ [335  21  72]
+ [128   8  29]]
+2026-08-17 16:45:22,060 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 16:45:22,216 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 16:45:22,216 INFO finsight.experts.quant.training.pipeline - Final Equity  : 1.0273
+2026-08-17 16:45:22,217 INFO finsight.experts.quant.training.pipeline - Net Return    : 2.73%
+2026-08-17 16:45:22,217 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 16:45:22,217 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -12.13%
+2026-08-17 16:45:22,217 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : 0.48
+2026-08-17 16:45:22,217 INFO finsight.experts.quant.training.pipeline - Win Rate      : 36.36%
+2026-08-17 16:45:22,218 INFO finsight.experts.quant.training.pipeline - Total Trades  : 44
+2026-08-17 16:45:22,218 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -0.16%
+2026-08-17 16:45:22,218 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 16:45:22,218 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 16:45:22,221 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 16:45:22,276 INFO finsight.experts.quant.training.shap_explainer - Lưu SHAP feature importance tại artifacts\models\crypto\crypto_quant_1d_5d_xgboost\v1\shap_importance.json
+2026-08-17 16:45:22,278 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 16:45:22,281 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 16:45:22,285 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_xgboost/v1
+2026-08-17 16:45:22,286 INFO finsight.cli.quant_commands - Starting pipeline for Engine: CATBOOST
+2026-08-17 16:45:22,287 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 16:45:22,339 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 16:45:22,339 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 16:45:22,339 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 16:45:22,342 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: SIDEWAYS: 42.3%, BEARISH: 29.4%, BULLISH: 28.2%
+2026-08-17 16:45:22,342 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình với Walk-Forward CV trên tập Train/Optuna...
+2026-08-17 16:45:22,353 INFO finsight.experts.quant.models.catboost_model - Starting Optuna Hyperparameter Tuning for CatBoost...
+2026-08-17 17:04:10,347 INFO finsight.experts.quant.models.catboost_model - Best Optuna Params (CatBoost): {'learning_rate': 0.08013636834426258, 'depth': 8, 'l2_leaf_reg': 9.603592484176742}
+2026-08-17 17:04:10,347 INFO finsight.experts.quant.models.catboost_model - Training final CatBoost model on full training set...
+2026-08-17 17:04:11,952 INFO finsight.experts.quant.models.catboost_model - [Verification] Actual CatBoost trees built: 12
+2026-08-17 17:04:11,954 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 17:04:11,961 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 17:04:12,002 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.15) trên 840 mẫu Calibration.
+2026-08-17 17:04:12,002 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_catboost/v1
+2026-08-17 17:04:12,011 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 17:04:12,216 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 32.68% | Macro F1: 0.24
+2026-08-17 17:04:12,217 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.100 | Brier Score: 0.223
+2026-08-17 17:04:12,217 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.36950146627565983, 'SIDEWAYS': 0.3888888888888889, 'BULLISH': 0.15566037735849056}
+2026-08-17 17:04:12,217 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.7477744807121661, 'SIDEWAYS': 0.03271028037383177, 'BULLISH': 0.2}
+2026-08-17 17:04:12,217 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[252  20  65]
+ [300  14 114]
+ [130   2  33]]
+2026-08-17 17:04:12,217 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 17:04:12,379 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 17:04:12,379 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.9715
+2026-08-17 17:04:12,379 INFO finsight.experts.quant.training.pipeline - Net Return    : -2.85%
+2026-08-17 17:04:12,380 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 17:04:12,380 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -13.85%
+2026-08-17 17:04:12,380 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -0.04
+2026-08-17 17:04:12,380 INFO finsight.experts.quant.training.pipeline - Win Rate      : 29.09%
+2026-08-17 17:04:12,380 INFO finsight.experts.quant.training.pipeline - Total Trades  : 55
+2026-08-17 17:04:12,381 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -1.52%
+2026-08-17 17:04:12,381 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 17:04:12,381 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 17:04:12,383 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 17:04:12,384 INFO finsight.experts.quant.training.shap_explainer - Bỏ qua SHAP Explainer cho CatBoost để tránh lỗi silent crash (segmentation fault) trên thư viện SHAP hiện tại.
+2026-08-17 17:04:12,384 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 17:04:12,386 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 17:04:12,388 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_catboost/v1
+2026-08-17 17:04:12,389 INFO finsight.cli.quant_commands - Starting pipeline for Engine: LOGISTIC_REGRESSION
+2026-08-17 17:04:12,394 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 17:04:12,437 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 17:04:12,437 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 17:04:12,438 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 17:04:12,439 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: SIDEWAYS: 42.3%, BEARISH: 29.4%, BULLISH: 28.2%
+2026-08-17 17:04:12,439 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình với Walk-Forward CV trên tập Train/Optuna...
+2026-08-17 17:04:12,441 INFO finsight.experts.quant.models.logistic_regression - Starting Optuna Hyperparameter Tuning for Logistic Regression...
+2026-08-17 17:05:17,468 INFO finsight.experts.quant.models.logistic_regression - Best Optuna Params (Logistic Regression): {'C': 0.0010375355358763776}
+2026-08-17 17:05:17,469 INFO finsight.experts.quant.models.logistic_regression - Training final Logistic Regression model on full training set...
+2026-08-17 17:05:17,657 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 17:05:17,663 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 17:05:17,694 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.07) trên 840 mẫu Calibration.
+2026-08-17 17:05:17,694 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_logistic_regression/v1
+2026-08-17 17:05:17,699 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 17:05:17,859 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 33.77% | Macro F1: 0.28
+2026-08-17 17:05:17,859 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.079 | Brier Score: 0.218
+2026-08-17 17:05:17,859 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.4444444444444444, 'SIDEWAYS': 0.4761273209549072, 'BULLISH': 0.13934426229508196}
+2026-08-17 17:05:17,860 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.0712166172106825, 'SIDEWAYS': 0.8387850467289719, 'BULLISH': 0.10303030303030303}
+2026-08-17 17:05:17,860 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[ 24 254  59]
+ [ 23 359  46]
+ [  7 141  17]]
+2026-08-17 17:05:17,861 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 17:05:18,008 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 17:05:18,009 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.9052
+2026-08-17 17:05:18,009 INFO finsight.experts.quant.training.pipeline - Net Return    : -9.48%
+2026-08-17 17:05:18,009 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 17:05:18,010 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -27.82%
+2026-08-17 17:05:18,010 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -0.43
+2026-08-17 17:05:18,010 INFO finsight.experts.quant.training.pipeline - Win Rate      : 29.69%
+2026-08-17 17:05:18,011 INFO finsight.experts.quant.training.pipeline - Total Trades  : 64
+2026-08-17 17:05:18,011 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -2.37%
+2026-08-17 17:05:18,011 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 17:05:18,011 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 17:05:18,014 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 17:05:18,014 INFO finsight.experts.quant.training.shap_explainer - Bỏ qua SHAP Explainer vì mô hình là dạng Pipeline/Linear (không hỗ trợ TreeExplainer).
+2026-08-17 17:05:18,015 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 17:05:18,018 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 17:05:18,022 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_logistic_regression/v1
+2026-08-17 17:05:18,022 INFO finsight.cli.quant_commands - [DONE] All Batch Training completed!
+2026-08-17 21:53:20,105 INFO finsight.cli.quant_commands - Building dataset for model: crypto_quant_1d_5d
+2026-08-17 21:53:27,706 INFO finsight.experts.quant.datasets.builder - Đã lọc dữ liệu theo history_years=5. Số lượng mẫu sau khi lọc: 18270
+2026-08-17 21:53:27,890 INFO finsight.cli.quant_commands - Dataset successfully built at: data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:41:42,849 INFO finsight.cli.quant_commands - Building dataset for model: crypto_quant_1d_5d
+2026-08-17 22:41:45,287 INFO finsight.experts.quant.datasets.builder - Đã lọc dữ liệu theo history_years=5. Số lượng mẫu sau khi lọc: 18270
+2026-08-17 22:41:45,502 INFO finsight.cli.quant_commands - Dataset successfully built at: data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:42:10,264 INFO finsight.cli.quant_commands - Starting pipeline for Engine: LIGHTGBM
+2026-08-17 22:42:10,265 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:42:10,372 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 22:42:10,372 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 22:42:10,372 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 22:42:10,377 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: BEARISH: 40.2%, BULLISH: 37.5%, SIDEWAYS: 22.3%
+2026-08-17 22:42:10,378 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 22:42:10,386 INFO finsight.experts.quant.models.lightgbm_model - Training final LightGBM model on full training set...
+2026-08-17 22:42:11,587 INFO finsight.experts.quant.models.lightgbm_model - [Verification] Actual LightGBM trees built: 300
+2026-08-17 22:42:11,587 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 22:42:11,600 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 22:42:11,671 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.16) trên 840 mẫu Calibration.
+2026-08-17 22:42:11,672 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_lightgbm/v1
+2026-08-17 22:42:14,918 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 22:42:15,160 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 34.05% | Macro F1: 0.31
+2026-08-17 22:42:15,160 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.095 | Brier Score: 0.221
+2026-08-17 22:42:15,161 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.5035360678925035, 'SIDEWAYS': 0.36363636363636365, 'BULLISH': 0.2631578947368421}
+2026-08-17 22:42:15,161 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.7623126338329764, 'SIDEWAYS': 0.05504587155963303, 'BULLISH': 0.20408163265306123}
+2026-08-17 22:42:15,161 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[356  15  96]
+ [162  12  44]
+ [189   6  50]]
+2026-08-17 22:42:15,161 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 22:42:15,334 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 22:42:15,334 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.9434
+2026-08-17 22:42:15,334 INFO finsight.experts.quant.training.pipeline - Net Return    : -5.66%
+2026-08-17 22:42:15,334 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 22:42:15,334 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -13.66%
+2026-08-17 22:42:15,334 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -0.38
+2026-08-17 22:42:15,334 INFO finsight.experts.quant.training.pipeline - Win Rate      : 34.94%
+2026-08-17 22:42:15,334 INFO finsight.experts.quant.training.pipeline - Total Trades  : 83
+2026-08-17 22:42:15,334 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -1.07%
+2026-08-17 22:42:15,334 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 22:42:15,334 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 22:42:15,338 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 22:42:16,083 INFO finsight.experts.quant.training.shap_explainer - Lưu SHAP feature importance tại artifacts\models\crypto\crypto_quant_1d_5d_lightgbm\v1\shap_importance.json
+2026-08-17 22:42:16,087 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 22:42:16,091 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 22:42:16,091 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_lightgbm/v1
+2026-08-17 22:42:16,091 INFO finsight.cli.quant_commands - Starting pipeline for Engine: XGBOOST
+2026-08-17 22:42:16,091 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:42:16,153 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 22:42:16,154 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 22:42:16,154 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 22:42:16,156 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: BEARISH: 40.2%, BULLISH: 37.5%, SIDEWAYS: 22.3%
+2026-08-17 22:42:16,156 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 22:42:16,162 INFO finsight.experts.quant.models.xgboost_model - Training final XGBoost model on full training set...
+2026-08-17 22:42:20,945 INFO finsight.experts.quant.models.xgboost_model - [Verification] Actual XGBoost estimators requested: 100
+2026-08-17 22:42:20,947 INFO finsight.experts.quant.models.xgboost_model - [Verification] Actual XGBoost trees built (approx): 100
+2026-08-17 22:42:20,948 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 22:42:20,968 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 22:42:21,048 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.28) trên 840 mẫu Calibration.
+2026-08-17 22:42:21,048 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_xgboost/v1
+2026-08-17 22:42:21,123 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 22:42:21,391 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 34.76% | Macro F1: 0.33
+2026-08-17 22:42:21,392 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.284 | Brier Score: 0.251
+2026-08-17 22:42:21,392 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.5150078988941548, 'SIDEWAYS': 0.2702702702702703, 'BULLISH': 0.27802690582959644}
+2026-08-17 22:42:21,392 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.6980728051391863, 'SIDEWAYS': 0.09174311926605505, 'BULLISH': 0.2530612244897959}
+2026-08-17 22:42:21,392 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[326  34 107]
+ [144  20  54]
+ [163  20  62]]
+2026-08-17 22:42:21,392 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 22:42:21,604 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 22:42:21,604 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.9674
+2026-08-17 22:42:21,604 INFO finsight.experts.quant.training.pipeline - Net Return    : -3.26%
+2026-08-17 22:42:21,604 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 22:42:21,604 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -19.48%
+2026-08-17 22:42:21,604 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -0.06
+2026-08-17 22:42:21,604 INFO finsight.experts.quant.training.pipeline - Win Rate      : 30.23%
+2026-08-17 22:42:21,604 INFO finsight.experts.quant.training.pipeline - Total Trades  : 86
+2026-08-17 22:42:21,604 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -1.22%
+2026-08-17 22:42:21,604 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 22:42:21,605 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 22:42:21,608 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 22:42:22,410 INFO finsight.experts.quant.training.shap_explainer - Lưu SHAP feature importance tại artifacts\models\crypto\crypto_quant_1d_5d_xgboost\v1\shap_importance.json
+2026-08-17 22:42:22,413 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 22:42:22,416 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 22:42:22,421 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_xgboost/v1
+2026-08-17 22:42:22,421 INFO finsight.cli.quant_commands - Starting pipeline for Engine: CATBOOST
+2026-08-17 22:42:22,422 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:42:22,486 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 22:42:22,486 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 22:42:22,486 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 22:42:22,488 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: BEARISH: 40.2%, BULLISH: 37.5%, SIDEWAYS: 22.3%
+2026-08-17 22:42:22,489 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 22:42:22,500 INFO finsight.experts.quant.models.catboost_model - Training final CatBoost model on full training set...
+2026-08-17 22:42:29,268 INFO finsight.experts.quant.models.catboost_model - [Verification] Actual CatBoost trees built: 100
+2026-08-17 22:42:29,269 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 22:42:29,278 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 22:42:29,325 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.05) trên 840 mẫu Calibration.
+2026-08-17 22:42:29,325 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_catboost/v1
+2026-08-17 22:42:29,331 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 22:42:29,521 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 33.48% | Macro F1: 0.26
+2026-08-17 22:42:29,521 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.044 | Brier Score: 0.209
+2026-08-17 22:42:29,521 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.5082938388625592, 'SIDEWAYS': 0.0, 'BULLISH': 0.25}
+2026-08-17 22:42:29,521 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.9186295503211992, 'SIDEWAYS': 0.0, 'BULLISH': 0.08571428571428572}
+2026-08-17 22:42:29,521 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[429   2  36]
+ [191   0  27]
+ [224   0  21]]
+2026-08-17 22:42:29,521 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 22:42:29,681 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 22:42:29,681 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.7824
+2026-08-17 22:42:29,681 INFO finsight.experts.quant.training.pipeline - Net Return    : -21.76%
+2026-08-17 22:42:29,681 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 22:42:29,681 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -28.93%
+2026-08-17 22:42:29,681 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -2.66
+2026-08-17 22:42:29,681 INFO finsight.experts.quant.training.pipeline - Win Rate      : 38.10%
+2026-08-17 22:42:29,681 INFO finsight.experts.quant.training.pipeline - Total Trades  : 42
+2026-08-17 22:42:29,682 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -1.26%
+2026-08-17 22:42:29,682 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 22:42:29,682 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 22:42:29,685 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 22:42:29,685 INFO finsight.experts.quant.training.shap_explainer - Bỏ qua SHAP Explainer cho CatBoost để tránh lỗi silent crash (segmentation fault) trên thư viện SHAP hiện tại.
+2026-08-17 22:42:29,685 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 22:42:29,688 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 22:42:29,691 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_catboost/v1
+2026-08-17 22:42:29,692 INFO finsight.cli.quant_commands - Starting pipeline for Engine: LOGISTIC_REGRESSION
+2026-08-17 22:42:29,693 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:42:29,754 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 22:42:29,755 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 22:42:29,755 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 22:42:29,756 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: BEARISH: 40.2%, BULLISH: 37.5%, SIDEWAYS: 22.3%
+2026-08-17 22:42:29,756 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 22:42:29,758 INFO finsight.experts.quant.models.logistic_regression - Training final Logistic Regression model on full training set...
+2026-08-17 22:42:30,998 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 22:42:31,013 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 22:42:31,087 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.47) trên 840 mẫu Calibration.
+2026-08-17 22:42:31,088 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_logistic_regression/v1
+2026-08-17 22:42:31,095 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 22:42:31,323 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 32.35% | Macro F1: 0.26
+2026-08-17 22:42:31,323 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.098 | Brier Score: 0.224
+2026-08-17 22:42:31,323 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.484593837535014, 'SIDEWAYS': 0.0, 'BULLISH': 0.25654450261780104}
+2026-08-17 22:42:31,324 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.37044967880085655, 'SIDEWAYS': 0.0, 'BULLISH': 0.6}
+2026-08-17 22:42:31,324 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[173   0 294]
+ [ 86   0 132]
+ [ 98   0 147]]
+2026-08-17 22:42:31,324 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 22:42:31,625 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 22:42:31,625 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.7133
+2026-08-17 22:42:31,625 INFO finsight.experts.quant.training.pipeline - Net Return    : -28.67%
+2026-08-17 22:42:31,625 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 22:42:31,625 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -34.70%
+2026-08-17 22:42:31,625 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -2.83
+2026-08-17 22:42:31,626 INFO finsight.experts.quant.training.pipeline - Win Rate      : 31.03%
+2026-08-17 22:42:31,626 INFO finsight.experts.quant.training.pipeline - Total Trades  : 174
+2026-08-17 22:42:31,626 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -1.70%
+2026-08-17 22:42:31,626 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 22:42:31,626 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 22:42:31,630 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 22:42:31,631 INFO finsight.experts.quant.training.shap_explainer - Bỏ qua SHAP Explainer vì mô hình là dạng Pipeline/Linear (không hỗ trợ TreeExplainer).
+2026-08-17 22:42:31,631 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 22:42:31,633 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 22:42:31,636 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_logistic_regression/v1
+2026-08-17 22:42:31,637 INFO finsight.cli.quant_commands - [DONE] All Batch Training completed!
+2026-08-17 22:51:42,086 INFO finsight.cli.quant_commands - Starting pipeline for Engine: LIGHTGBM
+2026-08-17 22:51:42,087 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:51:42,163 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 22:51:42,164 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 22:51:42,164 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 22:51:42,165 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: BEARISH: 40.2%, BULLISH: 37.5%, SIDEWAYS: 22.3%
+2026-08-17 22:51:42,165 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 22:51:42,170 INFO finsight.experts.quant.models.lightgbm_model - Training final LightGBM model on full training set...
+2026-08-17 22:51:43,022 INFO finsight.experts.quant.models.lightgbm_model - [Verification] Actual LightGBM trees built: 300
+2026-08-17 22:51:43,023 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 22:51:43,034 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 22:51:43,093 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.18) trên 840 mẫu Calibration.
+2026-08-17 22:51:43,093 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_lightgbm/v1
+2026-08-17 22:51:43,936 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 22:51:44,146 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 35.00% | Macro F1: 0.32
+2026-08-17 22:51:44,146 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.080 | Brier Score: 0.218
+2026-08-17 22:51:44,146 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.5167597765363129, 'SIDEWAYS': 0.3, 'BULLISH': 0.28804347826086957}
+2026-08-17 22:51:44,147 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.7922912205567452, 'SIDEWAYS': 0.04128440366972477, 'BULLISH': 0.2163265306122449}
+2026-08-17 22:51:44,147 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[370  16  81]
+ [159   9  50]
+ [187   5  53]]
+2026-08-17 22:51:44,147 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 22:51:44,335 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 22:51:44,336 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.9071
+2026-08-17 22:51:44,336 INFO finsight.experts.quant.training.pipeline - Net Return    : -9.29%
+2026-08-17 22:51:44,336 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 22:51:44,336 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -13.61%
+2026-08-17 22:51:44,336 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -0.86
+2026-08-17 22:51:44,337 INFO finsight.experts.quant.training.pipeline - Win Rate      : 40.58%
+2026-08-17 22:51:44,337 INFO finsight.experts.quant.training.pipeline - Total Trades  : 69
+2026-08-17 22:51:44,337 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -0.86%
+2026-08-17 22:51:44,337 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 22:51:44,337 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 22:51:44,340 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 22:51:44,978 INFO finsight.experts.quant.training.shap_explainer - Lưu SHAP feature importance tại artifacts\models\crypto\crypto_quant_1d_5d_lightgbm\v1\shap_importance.json
+2026-08-17 22:51:44,981 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 22:51:44,985 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 22:51:44,985 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_lightgbm/v1
+2026-08-17 22:51:44,986 INFO finsight.cli.quant_commands - Starting pipeline for Engine: XGBOOST
+2026-08-17 22:51:44,987 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:51:45,045 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 22:51:45,045 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 22:51:45,045 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 22:51:45,048 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: BEARISH: 40.2%, BULLISH: 37.5%, SIDEWAYS: 22.3%
+2026-08-17 22:51:45,048 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 22:51:45,055 INFO finsight.experts.quant.models.xgboost_model - Training final XGBoost model on full training set...
+2026-08-17 22:51:48,502 INFO finsight.experts.quant.models.xgboost_model - [Verification] Actual XGBoost estimators requested: 100
+2026-08-17 22:51:48,503 INFO finsight.experts.quant.models.xgboost_model - [Verification] Actual XGBoost trees built (approx): 100
+2026-08-17 22:51:48,503 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 22:51:48,517 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 22:51:48,576 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.26) trên 840 mẫu Calibration.
+2026-08-17 22:51:48,577 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_xgboost/v1
+2026-08-17 22:51:48,648 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 22:51:48,868 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 34.30% | Macro F1: 0.33
+2026-08-17 22:51:48,869 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.266 | Brier Score: 0.249
+2026-08-17 22:51:48,869 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.5150554675118859, 'SIDEWAYS': 0.28, 'BULLISH': 0.25892857142857145}
+2026-08-17 22:51:48,869 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.69593147751606, 'SIDEWAYS': 0.0963302752293578, 'BULLISH': 0.23673469387755103}
+2026-08-17 22:51:48,870 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[325  30 112]
+ [143  21  54]
+ [163  24  58]]
+2026-08-17 22:51:48,870 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 22:51:49,035 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 22:51:49,036 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.9747
+2026-08-17 22:51:49,036 INFO finsight.experts.quant.training.pipeline - Net Return    : -2.53%
+2026-08-17 22:51:49,036 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 22:51:49,037 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -19.25%
+2026-08-17 22:51:49,037 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -0.01
+2026-08-17 22:51:49,037 INFO finsight.experts.quant.training.pipeline - Win Rate      : 31.17%
+2026-08-17 22:51:49,038 INFO finsight.experts.quant.training.pipeline - Total Trades  : 77
+2026-08-17 22:51:49,038 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -1.00%
+2026-08-17 22:51:49,038 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 22:51:49,038 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 22:51:49,041 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 22:51:49,748 INFO finsight.experts.quant.training.shap_explainer - Lưu SHAP feature importance tại artifacts\models\crypto\crypto_quant_1d_5d_xgboost\v1\shap_importance.json
+2026-08-17 22:51:49,751 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 22:51:49,754 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 22:51:49,758 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_xgboost/v1
+2026-08-17 22:51:49,759 INFO finsight.cli.quant_commands - Starting pipeline for Engine: CATBOOST
+2026-08-17 22:51:49,761 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:51:49,819 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 22:51:49,820 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 22:51:49,820 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 22:51:49,822 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: BEARISH: 40.2%, BULLISH: 37.5%, SIDEWAYS: 22.3%
+2026-08-17 22:51:49,822 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 22:51:49,833 INFO finsight.experts.quant.models.catboost_model - Training final CatBoost model on full training set...
+2026-08-17 22:51:54,795 INFO finsight.experts.quant.models.catboost_model - [Verification] Actual CatBoost trees built: 100
+2026-08-17 22:51:54,797 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 22:51:54,804 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 22:51:54,851 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.16) trên 840 mẫu Calibration.
+2026-08-17 22:51:54,851 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_catboost/v1
+2026-08-17 22:51:54,858 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 22:51:55,072 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 33.15% | Macro F1: 0.28
+2026-08-17 22:51:55,072 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.054 | Brier Score: 0.212
+2026-08-17 22:51:55,072 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.5050890585241731, 'SIDEWAYS': 0.23076923076923078, 'BULLISH': 0.24427480916030533}
+2026-08-17 22:51:55,073 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.8501070663811563, 'SIDEWAYS': 0.013761467889908258, 'BULLISH': 0.1306122448979592}
+2026-08-17 22:51:55,073 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[397   7  63]
+ [179   3  36]
+ [210   3  32]]
+2026-08-17 22:51:55,073 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 22:51:55,236 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 22:51:55,237 INFO finsight.experts.quant.training.pipeline - Final Equity  : 1.1127
+2026-08-17 22:51:55,237 INFO finsight.experts.quant.training.pipeline - Net Return    : 11.27%
+2026-08-17 22:51:55,237 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 22:51:55,238 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -12.16%
+2026-08-17 22:51:55,238 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : 1.16
+2026-08-17 22:51:55,238 INFO finsight.experts.quant.training.pipeline - Win Rate      : 33.85%
+2026-08-17 22:51:55,239 INFO finsight.experts.quant.training.pipeline - Total Trades  : 65
+2026-08-17 22:51:55,239 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -1.14%
+2026-08-17 22:51:55,239 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 22:51:55,239 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 22:51:55,242 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 22:51:55,242 INFO finsight.experts.quant.training.shap_explainer - Bỏ qua SHAP Explainer cho CatBoost để tránh lỗi silent crash (segmentation fault) trên thư viện SHAP hiện tại.
+2026-08-17 22:51:55,242 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 22:51:55,245 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 22:51:55,249 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_catboost/v1
+2026-08-17 22:51:55,250 INFO finsight.cli.quant_commands - Starting pipeline for Engine: LOGISTIC_REGRESSION
+2026-08-17 22:51:55,254 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:51:55,304 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 22:51:55,304 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 22:51:55,304 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 22:51:55,306 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: BEARISH: 40.2%, BULLISH: 37.5%, SIDEWAYS: 22.3%
+2026-08-17 22:51:55,307 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 22:51:55,309 INFO finsight.experts.quant.models.logistic_regression - Training final Logistic Regression model on full training set...
+2026-08-17 22:51:56,423 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 22:51:56,429 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 22:51:56,468 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.47) trên 840 mẫu Calibration.
+2026-08-17 22:51:56,469 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_logistic_regression/v1
+2026-08-17 22:51:56,472 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 22:51:56,662 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 32.35% | Macro F1: 0.26
+2026-08-17 22:51:56,663 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.098 | Brier Score: 0.224
+2026-08-17 22:51:56,663 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.484593837535014, 'SIDEWAYS': 0.0, 'BULLISH': 0.25654450261780104}
+2026-08-17 22:51:56,663 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.37044967880085655, 'SIDEWAYS': 0.0, 'BULLISH': 0.6}
+2026-08-17 22:51:56,664 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[173   0 294]
+ [ 86   0 132]
+ [ 98   0 147]]
+2026-08-17 22:51:56,664 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 22:51:56,909 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 22:51:56,909 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.7133
+2026-08-17 22:51:56,910 INFO finsight.experts.quant.training.pipeline - Net Return    : -28.67%
+2026-08-17 22:51:56,910 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 22:51:56,910 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -34.70%
+2026-08-17 22:51:56,910 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -2.83
+2026-08-17 22:51:56,911 INFO finsight.experts.quant.training.pipeline - Win Rate      : 31.03%
+2026-08-17 22:51:56,911 INFO finsight.experts.quant.training.pipeline - Total Trades  : 174
+2026-08-17 22:51:56,911 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -1.70%
+2026-08-17 22:51:56,911 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 22:51:56,911 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 22:51:56,915 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 22:51:56,915 INFO finsight.experts.quant.training.shap_explainer - Bỏ qua SHAP Explainer vì mô hình là dạng Pipeline/Linear (không hỗ trợ TreeExplainer).
+2026-08-17 22:51:56,915 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 22:51:56,917 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 22:51:56,920 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_logistic_regression/v1
+2026-08-17 22:51:56,921 INFO finsight.cli.quant_commands - [DONE] All Batch Training completed!
+2026-08-17 22:54:21,929 INFO finsight.cli.quant_commands - Starting pipeline for Engine: LIGHTGBM
+2026-08-17 22:54:21,929 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:54:21,999 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 22:54:22,000 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 22:54:22,000 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 22:54:22,001 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: BEARISH: 40.2%, BULLISH: 37.5%, SIDEWAYS: 22.3%
+2026-08-17 22:54:22,001 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 22:54:22,006 INFO finsight.experts.quant.models.lightgbm_model - Training final LightGBM model on full training set...
+2026-08-17 22:54:22,795 INFO finsight.experts.quant.models.lightgbm_model - [Verification] Actual LightGBM trees built: 300
+2026-08-17 22:54:22,796 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 22:54:22,808 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 22:54:22,866 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.18) trên 840 mẫu Calibration.
+2026-08-17 22:54:22,867 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_lightgbm/v1
+2026-08-17 22:54:23,689 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 22:54:23,891 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 35.00% | Macro F1: 0.32
+2026-08-17 22:54:23,891 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.080 | Brier Score: 0.218
+2026-08-17 22:54:23,891 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.5167597765363129, 'SIDEWAYS': 0.3, 'BULLISH': 0.28804347826086957}
+2026-08-17 22:54:23,891 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.7922912205567452, 'SIDEWAYS': 0.04128440366972477, 'BULLISH': 0.2163265306122449}
+2026-08-17 22:54:23,891 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[370  16  81]
+ [159   9  50]
+ [187   5  53]]
+2026-08-17 22:54:23,892 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 22:54:24,056 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 22:54:24,056 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.9071
+2026-08-17 22:54:24,057 INFO finsight.experts.quant.training.pipeline - Net Return    : -9.29%
+2026-08-17 22:54:24,057 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 22:54:24,057 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -13.61%
+2026-08-17 22:54:24,057 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -0.86
+2026-08-17 22:54:24,058 INFO finsight.experts.quant.training.pipeline - Win Rate      : 40.58%
+2026-08-17 22:54:24,058 INFO finsight.experts.quant.training.pipeline - Total Trades  : 69
+2026-08-17 22:54:24,058 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -0.86%
+2026-08-17 22:54:24,058 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 22:54:24,058 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 22:54:24,062 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 22:54:24,667 INFO finsight.experts.quant.training.shap_explainer - Lưu SHAP feature importance tại artifacts\models\crypto\crypto_quant_1d_5d_lightgbm\v1\shap_importance.json
+2026-08-17 22:54:24,670 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 22:54:24,673 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 22:54:24,674 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_lightgbm/v1
+2026-08-17 22:54:24,675 INFO finsight.cli.quant_commands - Starting pipeline for Engine: XGBOOST
+2026-08-17 22:54:24,675 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:54:24,730 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 22:54:24,731 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 22:54:24,731 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 22:54:24,733 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: BEARISH: 40.2%, BULLISH: 37.5%, SIDEWAYS: 22.3%
+2026-08-17 22:54:24,734 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 22:54:24,740 INFO finsight.experts.quant.models.xgboost_model - Training final XGBoost model on full training set...
+2026-08-17 22:54:27,746 INFO finsight.experts.quant.models.xgboost_model - [Verification] Actual XGBoost estimators requested: 100
+2026-08-17 22:54:27,746 INFO finsight.experts.quant.models.xgboost_model - [Verification] Actual XGBoost trees built (approx): 100
+2026-08-17 22:54:27,747 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 22:54:27,759 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 22:54:27,819 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.26) trên 840 mẫu Calibration.
+2026-08-17 22:54:27,820 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_xgboost/v1
+2026-08-17 22:54:27,892 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 22:54:28,117 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 34.30% | Macro F1: 0.33
+2026-08-17 22:54:28,117 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.266 | Brier Score: 0.249
+2026-08-17 22:54:28,117 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.5150554675118859, 'SIDEWAYS': 0.28, 'BULLISH': 0.25892857142857145}
+2026-08-17 22:54:28,118 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.69593147751606, 'SIDEWAYS': 0.0963302752293578, 'BULLISH': 0.23673469387755103}
+2026-08-17 22:54:28,118 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[325  30 112]
+ [143  21  54]
+ [163  24  58]]
+2026-08-17 22:54:28,119 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 22:54:28,296 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 22:54:28,297 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.9747
+2026-08-17 22:54:28,297 INFO finsight.experts.quant.training.pipeline - Net Return    : -2.53%
+2026-08-17 22:54:28,298 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 22:54:28,298 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -19.25%
+2026-08-17 22:54:28,298 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -0.01
+2026-08-17 22:54:28,299 INFO finsight.experts.quant.training.pipeline - Win Rate      : 31.17%
+2026-08-17 22:54:28,299 INFO finsight.experts.quant.training.pipeline - Total Trades  : 77
+2026-08-17 22:54:28,299 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -1.00%
+2026-08-17 22:54:28,299 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 22:54:28,300 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 22:54:28,302 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 22:54:28,941 INFO finsight.experts.quant.training.shap_explainer - Lưu SHAP feature importance tại artifacts\models\crypto\crypto_quant_1d_5d_xgboost\v1\shap_importance.json
+2026-08-17 22:54:28,944 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 22:54:28,947 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 22:54:28,952 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_xgboost/v1
+2026-08-17 22:54:28,953 INFO finsight.cli.quant_commands - Starting pipeline for Engine: CATBOOST
+2026-08-17 22:54:28,955 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:54:29,011 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 22:54:29,012 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 22:54:29,012 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 22:54:29,015 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: BEARISH: 40.2%, BULLISH: 37.5%, SIDEWAYS: 22.3%
+2026-08-17 22:54:29,015 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 22:54:29,026 INFO finsight.experts.quant.models.catboost_model - Training final CatBoost model on full training set...
+2026-08-17 22:54:33,891 INFO finsight.experts.quant.models.catboost_model - [Verification] Actual CatBoost trees built: 100
+2026-08-17 22:54:33,892 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 22:54:33,898 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 22:54:33,932 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.16) trên 840 mẫu Calibration.
+2026-08-17 22:54:33,932 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_catboost/v1
+2026-08-17 22:54:33,941 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 22:54:34,108 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 33.15% | Macro F1: 0.28
+2026-08-17 22:54:34,108 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.054 | Brier Score: 0.212
+2026-08-17 22:54:34,109 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.5050890585241731, 'SIDEWAYS': 0.23076923076923078, 'BULLISH': 0.24427480916030533}
+2026-08-17 22:54:34,109 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.8501070663811563, 'SIDEWAYS': 0.013761467889908258, 'BULLISH': 0.1306122448979592}
+2026-08-17 22:54:34,109 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[397   7  63]
+ [179   3  36]
+ [210   3  32]]
+2026-08-17 22:54:34,109 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 22:54:34,274 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 22:54:34,275 INFO finsight.experts.quant.training.pipeline - Final Equity  : 1.1127
+2026-08-17 22:54:34,275 INFO finsight.experts.quant.training.pipeline - Net Return    : 11.27%
+2026-08-17 22:54:34,276 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 22:54:34,276 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -12.16%
+2026-08-17 22:54:34,276 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : 1.16
+2026-08-17 22:54:34,276 INFO finsight.experts.quant.training.pipeline - Win Rate      : 33.85%
+2026-08-17 22:54:34,277 INFO finsight.experts.quant.training.pipeline - Total Trades  : 65
+2026-08-17 22:54:34,277 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -1.14%
+2026-08-17 22:54:34,277 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 22:54:34,278 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 22:54:34,281 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 22:54:34,282 INFO finsight.experts.quant.training.shap_explainer - Bỏ qua SHAP Explainer cho CatBoost để tránh lỗi silent crash (segmentation fault) trên thư viện SHAP hiện tại.
+2026-08-17 22:54:34,282 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 22:54:34,286 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 22:54:34,290 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_catboost/v1
+2026-08-17 22:54:34,291 INFO finsight.cli.quant_commands - Starting pipeline for Engine: LOGISTIC_REGRESSION
+2026-08-17 22:54:34,294 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:54:34,349 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 22:54:34,350 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 22:54:34,350 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 22:54:34,353 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: BEARISH: 40.2%, BULLISH: 37.5%, SIDEWAYS: 22.3%
+2026-08-17 22:54:34,353 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 22:54:34,355 INFO finsight.experts.quant.models.logistic_regression - Training final Logistic Regression model on full training set...
+2026-08-17 22:54:35,401 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 22:54:35,407 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 22:54:35,444 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.47) trên 840 mẫu Calibration.
+2026-08-17 22:54:35,445 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_logistic_regression/v1
+2026-08-17 22:54:35,448 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 22:54:35,620 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 32.35% | Macro F1: 0.26
+2026-08-17 22:54:35,620 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.098 | Brier Score: 0.224
+2026-08-17 22:54:35,620 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.484593837535014, 'SIDEWAYS': 0.0, 'BULLISH': 0.25654450261780104}
+2026-08-17 22:54:35,620 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.37044967880085655, 'SIDEWAYS': 0.0, 'BULLISH': 0.6}
+2026-08-17 22:54:35,621 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[173   0 294]
+ [ 86   0 132]
+ [ 98   0 147]]
+2026-08-17 22:54:35,621 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 22:54:35,845 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 22:54:35,845 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.7133
+2026-08-17 22:54:35,845 INFO finsight.experts.quant.training.pipeline - Net Return    : -28.67%
+2026-08-17 22:54:35,846 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 22:54:35,846 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -34.70%
+2026-08-17 22:54:35,846 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -2.83
+2026-08-17 22:54:35,847 INFO finsight.experts.quant.training.pipeline - Win Rate      : 31.03%
+2026-08-17 22:54:35,847 INFO finsight.experts.quant.training.pipeline - Total Trades  : 174
+2026-08-17 22:54:35,847 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -1.70%
+2026-08-17 22:54:35,847 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 22:54:35,848 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 22:54:35,850 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 22:54:35,851 INFO finsight.experts.quant.training.shap_explainer - Bỏ qua SHAP Explainer vì mô hình là dạng Pipeline/Linear (không hỗ trợ TreeExplainer).
+2026-08-17 22:54:35,851 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 22:54:35,854 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 22:54:35,857 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_logistic_regression/v1
+2026-08-17 22:54:35,858 INFO finsight.cli.quant_commands - [DONE] All Batch Training completed!
+2026-08-17 22:55:03,475 INFO finsight.cli.quant_commands - Building dataset for model: crypto_quant_1d_5d
+2026-08-17 22:55:06,009 INFO finsight.experts.quant.datasets.builder - Đã lọc dữ liệu theo history_years=5. Số lượng mẫu sau khi lọc: 18270
+2026-08-17 22:55:06,184 INFO finsight.cli.quant_commands - Dataset successfully built at: data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:55:18,046 INFO finsight.cli.quant_commands - Starting pipeline for Engine: LIGHTGBM
+2026-08-17 22:55:18,046 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:55:18,123 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 22:55:18,123 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 22:55:18,123 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 22:55:18,125 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: BEARISH: 40.2%, BULLISH: 37.5%, SIDEWAYS: 22.3%
+2026-08-17 22:55:18,125 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 22:55:18,129 INFO finsight.experts.quant.models.lightgbm_model - Training final LightGBM model on full training set...
+2026-08-17 22:55:18,904 INFO finsight.experts.quant.models.lightgbm_model - [Verification] Actual LightGBM trees built: 300
+2026-08-17 22:55:18,905 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 22:55:18,915 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 22:55:18,973 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.14) trên 840 mẫu Calibration.
+2026-08-17 22:55:18,973 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_lightgbm/v1
+2026-08-17 22:55:19,794 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 22:55:19,998 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 32.97% | Macro F1: 0.30
+2026-08-17 22:55:19,999 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.106 | Brier Score: 0.222
+2026-08-17 22:55:19,999 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.505464480874317, 'SIDEWAYS': 0.26865671641791045, 'BULLISH': 0.21374045801526717}
+2026-08-17 22:55:19,999 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.7922912205567452, 'SIDEWAYS': 0.08256880733944955, 'BULLISH': 0.11428571428571428}
+2026-08-17 22:55:19,999 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[370  31  66]
+ [163  18  37]
+ [199  18  28]]
+2026-08-17 22:55:19,999 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 22:55:20,153 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 22:55:20,153 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.9987
+2026-08-17 22:55:20,154 INFO finsight.experts.quant.training.pipeline - Net Return    : -0.13%
+2026-08-17 22:55:20,154 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 22:55:20,154 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -16.37%
+2026-08-17 22:55:20,154 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : 0.22
+2026-08-17 22:55:20,154 INFO finsight.experts.quant.training.pipeline - Win Rate      : 60.38%
+2026-08-17 22:55:20,154 INFO finsight.experts.quant.training.pipeline - Total Trades  : 53
+2026-08-17 22:55:20,154 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : 0.70%
+2026-08-17 22:55:20,154 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 22:55:20,154 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 22:55:20,157 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 22:55:20,867 INFO finsight.experts.quant.training.shap_explainer - Lưu SHAP feature importance tại artifacts\models\crypto\crypto_quant_1d_5d_lightgbm\v1\shap_importance.json
+2026-08-17 22:55:20,870 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 22:55:20,874 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 22:55:20,874 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_lightgbm/v1
+2026-08-17 22:55:20,874 INFO finsight.cli.quant_commands - Starting pipeline for Engine: XGBOOST
+2026-08-17 22:55:20,874 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:55:20,927 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 22:55:20,927 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 22:55:20,927 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 22:55:20,928 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: BEARISH: 40.2%, BULLISH: 37.5%, SIDEWAYS: 22.3%
+2026-08-17 22:55:20,929 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 22:55:20,933 INFO finsight.experts.quant.models.xgboost_model - Training final XGBoost model on full training set...
+2026-08-17 22:55:24,104 INFO finsight.experts.quant.models.xgboost_model - [Verification] Actual XGBoost estimators requested: 100
+2026-08-17 22:55:24,105 INFO finsight.experts.quant.models.xgboost_model - [Verification] Actual XGBoost trees built (approx): 100
+2026-08-17 22:55:24,105 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 22:55:24,118 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 22:55:24,180 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.20) trên 840 mẫu Calibration.
+2026-08-17 22:55:24,180 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_xgboost/v1
+2026-08-17 22:55:24,255 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 22:55:24,501 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 34.64% | Macro F1: 0.33
+2026-08-17 22:55:24,502 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.281 | Brier Score: 0.250
+2026-08-17 22:55:24,502 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.5142450142450142, 'SIDEWAYS': 0.3170731707317073, 'BULLISH': 0.2465753424657534}
+2026-08-17 22:55:24,502 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.7730192719486081, 'SIDEWAYS': 0.11926605504587157, 'BULLISH': 0.1469387755102041}
+2026-08-17 22:55:24,502 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[361  30  76]
+ [158  26  34]
+ [183  26  36]]
+2026-08-17 22:55:24,502 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 22:55:24,692 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 22:55:24,692 INFO finsight.experts.quant.training.pipeline - Final Equity  : 1.0105
+2026-08-17 22:55:24,692 INFO finsight.experts.quant.training.pipeline - Net Return    : 1.05%
+2026-08-17 22:55:24,692 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 22:55:24,692 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -15.26%
+2026-08-17 22:55:24,692 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : 0.30
+2026-08-17 22:55:24,692 INFO finsight.experts.quant.training.pipeline - Win Rate      : 40.00%
+2026-08-17 22:55:24,692 INFO finsight.experts.quant.training.pipeline - Total Trades  : 60
+2026-08-17 22:55:24,692 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -0.51%
+2026-08-17 22:55:24,693 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 22:55:24,693 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 22:55:24,696 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 22:55:25,426 INFO finsight.experts.quant.training.shap_explainer - Lưu SHAP feature importance tại artifacts\models\crypto\crypto_quant_1d_5d_xgboost\v1\shap_importance.json
+2026-08-17 22:55:25,429 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 22:55:25,432 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 22:55:25,436 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_xgboost/v1
+2026-08-17 22:55:25,436 INFO finsight.cli.quant_commands - Starting pipeline for Engine: CATBOOST
+2026-08-17 22:55:25,437 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:55:25,486 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 22:55:25,486 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 22:55:25,486 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 22:55:25,489 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: BEARISH: 40.2%, BULLISH: 37.5%, SIDEWAYS: 22.3%
+2026-08-17 22:55:25,489 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 22:55:25,498 INFO finsight.experts.quant.models.catboost_model - Training final CatBoost model on full training set...
+2026-08-17 22:55:31,509 INFO finsight.experts.quant.models.catboost_model - [Verification] Actual CatBoost trees built: 100
+2026-08-17 22:55:31,510 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 22:55:31,516 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 22:55:31,552 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.10) trên 840 mẫu Calibration.
+2026-08-17 22:55:31,552 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_catboost/v1
+2026-08-17 22:55:31,557 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 22:55:31,725 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 34.88% | Macro F1: 0.28
+2026-08-17 22:55:31,725 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.042 | Brier Score: 0.209
+2026-08-17 22:55:31,725 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.5133256083429896, 'SIDEWAYS': 0.38095238095238093, 'BULLISH': 0.32608695652173914}
+2026-08-17 22:55:31,725 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.9486081370449678, 'SIDEWAYS': 0.03669724770642202, 'BULLISH': 0.061224489795918366}
+2026-08-17 22:55:31,726 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[443   9  15]
+ [194   8  16]
+ [226   4  15]]
+2026-08-17 22:55:31,726 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 22:55:31,874 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 22:55:31,874 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.8579
+2026-08-17 22:55:31,875 INFO finsight.experts.quant.training.pipeline - Net Return    : -14.21%
+2026-08-17 22:55:31,875 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 22:55:31,875 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -15.46%
+2026-08-17 22:55:31,875 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -2.24
+2026-08-17 22:55:31,875 INFO finsight.experts.quant.training.pipeline - Win Rate      : 46.88%
+2026-08-17 22:55:31,875 INFO finsight.experts.quant.training.pipeline - Total Trades  : 32
+2026-08-17 22:55:31,875 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -0.81%
+2026-08-17 22:55:31,875 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 22:55:31,875 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 22:55:31,878 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 22:55:31,878 INFO finsight.experts.quant.training.shap_explainer - Bỏ qua SHAP Explainer cho CatBoost để tránh lỗi silent crash (segmentation fault) trên thư viện SHAP hiện tại.
+2026-08-17 22:55:31,878 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 22:55:31,880 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 22:55:31,885 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_catboost/v1
+2026-08-17 22:55:31,885 INFO finsight.cli.quant_commands - Starting pipeline for Engine: LOGISTIC_REGRESSION
+2026-08-17 22:55:31,887 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:55:31,927 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 22:55:31,927 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 22:55:31,927 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 22:55:31,929 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: BEARISH: 40.2%, BULLISH: 37.5%, SIDEWAYS: 22.3%
+2026-08-17 22:55:31,929 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 22:55:31,931 INFO finsight.experts.quant.models.logistic_regression - Training final Logistic Regression model on full training set...
+2026-08-17 22:55:32,808 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 22:55:32,815 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 22:55:32,852 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.49) trên 840 mẫu Calibration.
+2026-08-17 22:55:32,852 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_logistic_regression/v1
+2026-08-17 22:55:32,856 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 22:55:33,029 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 32.69% | Macro F1: 0.26
+2026-08-17 22:55:33,030 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.095 | Brier Score: 0.223
+2026-08-17 22:55:33,030 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.4738292011019284, 'SIDEWAYS': 0.0, 'BULLISH': 0.26455026455026454}
+2026-08-17 22:55:33,030 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.3683083511777302, 'SIDEWAYS': 0.0, 'BULLISH': 0.6122448979591837}
+2026-08-17 22:55:33,030 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[172   0 295]
+ [ 96   0 122]
+ [ 95   0 150]]
+2026-08-17 22:55:33,030 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 22:55:33,289 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 22:55:33,290 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.7009
+2026-08-17 22:55:33,290 INFO finsight.experts.quant.training.pipeline - Net Return    : -29.91%
+2026-08-17 22:55:33,290 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 22:55:33,290 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -35.04%
+2026-08-17 22:55:33,290 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -2.87
+2026-08-17 22:55:33,290 INFO finsight.experts.quant.training.pipeline - Win Rate      : 30.60%
+2026-08-17 22:55:33,290 INFO finsight.experts.quant.training.pipeline - Total Trades  : 183
+2026-08-17 22:55:33,290 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -1.67%
+2026-08-17 22:55:33,290 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 22:55:33,290 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 22:55:33,293 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 22:55:33,293 INFO finsight.experts.quant.training.shap_explainer - Bỏ qua SHAP Explainer vì mô hình là dạng Pipeline/Linear (không hỗ trợ TreeExplainer).
+2026-08-17 22:55:33,293 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 22:55:33,295 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 22:55:33,298 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_logistic_regression/v1
+2026-08-17 22:55:33,298 INFO finsight.cli.quant_commands - [DONE] All Batch Training completed!
+2026-08-17 22:56:55,544 INFO finsight.cli.quant_commands - Building dataset for model: crypto_quant_1d_5d
+2026-08-17 22:56:57,750 INFO finsight.experts.quant.datasets.builder - Đã lọc dữ liệu theo history_years=5. Số lượng mẫu sau khi lọc: 18270
+2026-08-17 22:56:57,917 INFO finsight.cli.quant_commands - Dataset successfully built at: data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:57:06,676 INFO finsight.cli.quant_commands - Starting pipeline for Engine: LIGHTGBM
+2026-08-17 22:57:06,677 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:57:06,754 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 22:57:06,754 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 22:57:06,754 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 22:57:06,756 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: BEARISH: 40.2%, BULLISH: 37.5%, SIDEWAYS: 22.3%
+2026-08-17 22:57:06,756 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 22:57:06,760 INFO finsight.experts.quant.models.lightgbm_model - Training final LightGBM model on full training set...
+2026-08-17 22:57:07,370 INFO finsight.experts.quant.models.lightgbm_model - [Verification] Actual LightGBM trees built: 300
+2026-08-17 22:57:07,371 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 22:57:07,382 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 22:57:07,441 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.17) trên 840 mẫu Calibration.
+2026-08-17 22:57:07,441 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_lightgbm/v1
+2026-08-17 22:57:08,229 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 22:57:08,424 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 33.95% | Macro F1: 0.30
+2026-08-17 22:57:08,425 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.093 | Brier Score: 0.221
+2026-08-17 22:57:08,425 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.5104311543810849, 'SIDEWAYS': 0.25, 'BULLISH': 0.2681564245810056}
+2026-08-17 22:57:08,425 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.7858672376873662, 'SIDEWAYS': 0.03669724770642202, 'BULLISH': 0.19591836734693877}
+2026-08-17 22:57:08,426 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[367  15  85]
+ [164   8  46]
+ [188   9  48]]
+2026-08-17 22:57:08,426 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 22:57:08,571 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 22:57:08,571 INFO finsight.experts.quant.training.pipeline - Final Equity  : 1.1019
+2026-08-17 22:57:08,571 INFO finsight.experts.quant.training.pipeline - Net Return    : 10.19%
+2026-08-17 22:57:08,572 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 22:57:08,572 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -7.81%
+2026-08-17 22:57:08,572 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : 1.18
+2026-08-17 22:57:08,572 INFO finsight.experts.quant.training.pipeline - Win Rate      : 40.68%
+2026-08-17 22:57:08,573 INFO finsight.experts.quant.training.pipeline - Total Trades  : 59
+2026-08-17 22:57:08,573 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -0.07%
+2026-08-17 22:57:08,573 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 22:57:08,573 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 22:57:08,576 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 22:57:09,200 INFO finsight.experts.quant.training.shap_explainer - Lưu SHAP feature importance tại artifacts\models\crypto\crypto_quant_1d_5d_lightgbm\v1\shap_importance.json
+2026-08-17 22:57:09,203 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 22:57:09,207 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 22:57:09,207 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_lightgbm/v1
+2026-08-17 22:57:09,208 INFO finsight.cli.quant_commands - Starting pipeline for Engine: XGBOOST
+2026-08-17 22:57:09,209 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:57:09,260 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 22:57:09,260 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 22:57:09,261 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 22:57:09,263 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: BEARISH: 40.2%, BULLISH: 37.5%, SIDEWAYS: 22.3%
+2026-08-17 22:57:09,263 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 22:57:09,270 INFO finsight.experts.quant.models.xgboost_model - Training final XGBoost model on full training set...
+2026-08-17 22:57:11,859 INFO finsight.experts.quant.models.xgboost_model - [Verification] Actual XGBoost estimators requested: 100
+2026-08-17 22:57:11,860 INFO finsight.experts.quant.models.xgboost_model - [Verification] Actual XGBoost trees built (approx): 100
+2026-08-17 22:57:11,860 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 22:57:11,875 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 22:57:11,944 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.25) trên 840 mẫu Calibration.
+2026-08-17 22:57:11,945 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_xgboost/v1
+2026-08-17 22:57:12,019 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 22:57:12,248 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 33.70% | Macro F1: 0.32
+2026-08-17 22:57:12,249 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.280 | Brier Score: 0.251
+2026-08-17 22:57:12,249 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.5112179487179487, 'SIDEWAYS': 0.24675324675324675, 'BULLISH': 0.2576419213973799}
+2026-08-17 22:57:12,250 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.683083511777302, 'SIDEWAYS': 0.0871559633027523, 'BULLISH': 0.24081632653061225}
+2026-08-17 22:57:12,250 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[319  35 113]
+ [142  19  57]
+ [163  23  59]]
+2026-08-17 22:57:12,250 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 22:57:12,430 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 22:57:12,430 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.9167
+2026-08-17 22:57:12,431 INFO finsight.experts.quant.training.pipeline - Net Return    : -8.33%
+2026-08-17 22:57:12,431 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 22:57:12,431 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -21.56%
+2026-08-17 22:57:12,431 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -0.58
+2026-08-17 22:57:12,432 INFO finsight.experts.quant.training.pipeline - Win Rate      : 33.77%
+2026-08-17 22:57:12,432 INFO finsight.experts.quant.training.pipeline - Total Trades  : 77
+2026-08-17 22:57:12,432 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -0.91%
+2026-08-17 22:57:12,432 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 22:57:12,432 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 22:57:12,435 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 22:57:13,141 INFO finsight.experts.quant.training.shap_explainer - Lưu SHAP feature importance tại artifacts\models\crypto\crypto_quant_1d_5d_xgboost\v1\shap_importance.json
+2026-08-17 22:57:13,144 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 22:57:13,147 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 22:57:13,151 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_xgboost/v1
+2026-08-17 22:57:13,153 INFO finsight.cli.quant_commands - Starting pipeline for Engine: CATBOOST
+2026-08-17 22:57:13,155 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:57:13,204 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 22:57:13,205 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 22:57:13,205 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 22:57:13,207 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: BEARISH: 40.2%, BULLISH: 37.5%, SIDEWAYS: 22.3%
+2026-08-17 22:57:13,208 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 22:57:13,218 INFO finsight.experts.quant.models.catboost_model - Training final CatBoost model on full training set...
+2026-08-17 22:57:18,507 INFO finsight.experts.quant.models.catboost_model - [Verification] Actual CatBoost trees built: 100
+2026-08-17 22:57:18,509 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 22:57:18,515 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 22:57:18,555 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.07) trên 840 mẫu Calibration.
+2026-08-17 22:57:18,556 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_catboost/v1
+2026-08-17 22:57:18,563 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 22:57:18,739 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 33.39% | Macro F1: 0.27
+2026-08-17 22:57:18,740 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.051 | Brier Score: 0.211
+2026-08-17 22:57:18,740 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.5107731305449936, 'SIDEWAYS': 0.0, 'BULLISH': 0.2518518518518518}
+2026-08-17 22:57:18,740 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.8629550321199143, 'SIDEWAYS': 0.0, 'BULLISH': 0.13877551020408163}
+2026-08-17 22:57:18,741 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[403   3  61]
+ [178   0  40]
+ [208   3  34]]
+2026-08-17 22:57:18,741 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 22:57:18,914 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 22:57:18,914 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.8904
+2026-08-17 22:57:18,914 INFO finsight.experts.quant.training.pipeline - Net Return    : -10.96%
+2026-08-17 22:57:18,914 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 22:57:18,915 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -21.21%
+2026-08-17 22:57:18,915 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -1.31
+2026-08-17 22:57:18,915 INFO finsight.experts.quant.training.pipeline - Win Rate      : 46.67%
+2026-08-17 22:57:18,915 INFO finsight.experts.quant.training.pipeline - Total Trades  : 45
+2026-08-17 22:57:18,915 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : 0.07%
+2026-08-17 22:57:18,916 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 22:57:18,916 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 22:57:18,919 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 22:57:18,919 INFO finsight.experts.quant.training.shap_explainer - Bỏ qua SHAP Explainer cho CatBoost để tránh lỗi silent crash (segmentation fault) trên thư viện SHAP hiện tại.
+2026-08-17 22:57:18,919 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 22:57:18,923 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 22:57:18,928 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_catboost/v1
+2026-08-17 22:57:18,929 INFO finsight.cli.quant_commands - Starting pipeline for Engine: LOGISTIC_REGRESSION
+2026-08-17 22:57:18,932 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:57:18,977 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 22:57:18,978 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 22:57:18,978 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 22:57:18,981 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: BEARISH: 40.2%, BULLISH: 37.5%, SIDEWAYS: 22.3%
+2026-08-17 22:57:18,982 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 22:57:18,983 INFO finsight.experts.quant.models.logistic_regression - Training final Logistic Regression model on full training set...
+2026-08-17 22:57:19,884 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 22:57:19,890 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 22:57:19,924 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.45) trên 840 mẫu Calibration.
+2026-08-17 22:57:19,924 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_logistic_regression/v1
+2026-08-17 22:57:19,928 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 22:57:20,108 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 36.72% | Macro F1: 0.31
+2026-08-17 22:57:20,108 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.082 | Brier Score: 0.219
+2026-08-17 22:57:20,109 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.5333333333333333, 'SIDEWAYS': 0.0, 'BULLISH': 0.3}
+2026-08-17 22:57:20,109 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.5139186295503212, 'SIDEWAYS': 0.0, 'BULLISH': 0.5877551020408164}
+2026-08-17 22:57:20,110 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[240   0 227]
+ [109   0 109]
+ [101   0 144]]
+2026-08-17 22:57:20,110 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 22:57:20,333 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 22:57:20,333 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.6968
+2026-08-17 22:57:20,333 INFO finsight.experts.quant.training.pipeline - Net Return    : -30.32%
+2026-08-17 22:57:20,334 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 22:57:20,334 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -33.57%
+2026-08-17 22:57:20,334 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -3.13
+2026-08-17 22:57:20,334 INFO finsight.experts.quant.training.pipeline - Win Rate      : 30.68%
+2026-08-17 22:57:20,335 INFO finsight.experts.quant.training.pipeline - Total Trades  : 176
+2026-08-17 22:57:20,335 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -1.67%
+2026-08-17 22:57:20,335 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 22:57:20,335 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 22:57:20,338 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 22:57:20,338 INFO finsight.experts.quant.training.shap_explainer - Bỏ qua SHAP Explainer vì mô hình là dạng Pipeline/Linear (không hỗ trợ TreeExplainer).
+2026-08-17 22:57:20,338 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 22:57:20,341 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 22:57:20,344 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_logistic_regression/v1
+2026-08-17 22:57:20,345 INFO finsight.cli.quant_commands - [DONE] All Batch Training completed!
+2026-08-17 22:58:33,207 INFO finsight.cli.quant_commands - Building dataset for model: crypto_quant_1d_5d
+2026-08-17 22:58:35,009 INFO finsight.experts.quant.datasets.builder - Đã lọc dữ liệu theo history_years=5. Số lượng mẫu sau khi lọc: 18270
+2026-08-17 22:58:35,183 INFO finsight.cli.quant_commands - Dataset successfully built at: data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:58:39,178 INFO finsight.cli.quant_commands - Starting pipeline for Engine: LIGHTGBM
+2026-08-17 22:58:39,179 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:58:39,249 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 22:58:39,249 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 22:58:39,249 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 22:58:39,250 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: BEARISH: 40.2%, BULLISH: 37.5%, SIDEWAYS: 22.3%
+2026-08-17 22:58:39,251 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 22:58:39,254 INFO finsight.experts.quant.models.lightgbm_model - Training final LightGBM model on full training set...
+2026-08-17 22:58:39,859 INFO finsight.experts.quant.models.lightgbm_model - [Verification] Actual LightGBM trees built: 300
+2026-08-17 22:58:39,860 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 22:58:39,870 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 22:58:39,928 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.20) trên 840 mẫu Calibration.
+2026-08-17 22:58:39,928 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_lightgbm/v1
+2026-08-17 22:58:40,717 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 22:58:40,918 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 36.68% | Macro F1: 0.33
+2026-08-17 22:58:40,918 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.084 | Brier Score: 0.218
+2026-08-17 22:58:40,919 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.5356125356125356, 'SIDEWAYS': 0.4583333333333333, 'BULLISH': 0.29411764705882354}
+2026-08-17 22:58:40,919 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.8051391862955032, 'SIDEWAYS': 0.05045871559633028, 'BULLISH': 0.24489795918367346}
+2026-08-17 22:58:40,919 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[376   9  82]
+ [145  11  62]
+ [181   4  60]]
+2026-08-17 22:58:40,919 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 22:58:41,065 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 22:58:41,066 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.8364
+2026-08-17 22:58:41,066 INFO finsight.experts.quant.training.pipeline - Net Return    : -16.36%
+2026-08-17 22:58:41,066 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 22:58:41,066 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -24.79%
+2026-08-17 22:58:41,066 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -1.34
+2026-08-17 22:58:41,066 INFO finsight.experts.quant.training.pipeline - Win Rate      : 42.65%
+2026-08-17 22:58:41,067 INFO finsight.experts.quant.training.pipeline - Total Trades  : 68
+2026-08-17 22:58:41,067 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -0.76%
+2026-08-17 22:58:41,067 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 22:58:41,067 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 22:58:41,069 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 22:58:41,783 INFO finsight.experts.quant.training.shap_explainer - Lưu SHAP feature importance tại artifacts\models\crypto\crypto_quant_1d_5d_lightgbm\v1\shap_importance.json
+2026-08-17 22:58:41,788 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 22:58:41,791 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 22:58:41,794 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_lightgbm/v1
+2026-08-17 22:58:41,796 INFO finsight.cli.quant_commands - Starting pipeline for Engine: XGBOOST
+2026-08-17 22:58:41,797 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:58:41,848 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 22:58:41,848 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 22:58:41,849 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 22:58:41,850 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: BEARISH: 40.2%, BULLISH: 37.5%, SIDEWAYS: 22.3%
+2026-08-17 22:58:41,850 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 22:58:41,854 INFO finsight.experts.quant.models.xgboost_model - Training final XGBoost model on full training set...
+2026-08-17 22:58:44,592 INFO finsight.experts.quant.models.xgboost_model - [Verification] Actual XGBoost estimators requested: 100
+2026-08-17 22:58:44,593 INFO finsight.experts.quant.models.xgboost_model - [Verification] Actual XGBoost trees built (approx): 100
+2026-08-17 22:58:44,593 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 22:58:44,608 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 22:58:44,668 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.30) trên 840 mẫu Calibration.
+2026-08-17 22:58:44,668 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_xgboost/v1
+2026-08-17 22:58:44,743 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 22:58:44,969 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 34.51% | Macro F1: 0.31
+2026-08-17 22:58:44,969 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.197 | Brier Score: 0.239
+2026-08-17 22:58:44,969 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.5245641838351822, 'SIDEWAYS': 0.2857142857142857, 'BULLISH': 0.26199261992619927}
+2026-08-17 22:58:44,970 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.708779443254818, 'SIDEWAYS': 0.03669724770642202, 'BULLISH': 0.2897959183673469}
+2026-08-17 22:58:44,970 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[331  12 124]
+ [134   8  76]
+ [166   8  71]]
+2026-08-17 22:58:44,970 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 22:58:45,151 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 22:58:45,151 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.9793
+2026-08-17 22:58:45,151 INFO finsight.experts.quant.training.pipeline - Net Return    : -2.07%
+2026-08-17 22:58:45,151 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 22:58:45,152 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -24.76%
+2026-08-17 22:58:45,152 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : 0.01
+2026-08-17 22:58:45,152 INFO finsight.experts.quant.training.pipeline - Win Rate      : 35.79%
+2026-08-17 22:58:45,152 INFO finsight.experts.quant.training.pipeline - Total Trades  : 95
+2026-08-17 22:58:45,152 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -0.93%
+2026-08-17 22:58:45,153 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 22:58:45,153 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 22:58:45,155 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 22:58:45,809 INFO finsight.experts.quant.training.shap_explainer - Lưu SHAP feature importance tại artifacts\models\crypto\crypto_quant_1d_5d_xgboost\v1\shap_importance.json
+2026-08-17 22:58:45,811 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 22:58:45,815 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 22:58:45,817 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_xgboost/v1
+2026-08-17 22:58:45,818 INFO finsight.cli.quant_commands - Starting pipeline for Engine: CATBOOST
+2026-08-17 22:58:45,821 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:58:45,869 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 22:58:45,869 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 22:58:45,870 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 22:58:45,872 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: BEARISH: 40.2%, BULLISH: 37.5%, SIDEWAYS: 22.3%
+2026-08-17 22:58:45,872 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 22:58:45,883 INFO finsight.experts.quant.models.catboost_model - Training final CatBoost model on full training set...
+2026-08-17 22:58:51,077 INFO finsight.experts.quant.models.catboost_model - [Verification] Actual CatBoost trees built: 100
+2026-08-17 22:58:51,078 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 22:58:51,084 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 22:58:51,121 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.14) trên 840 mẫu Calibration.
+2026-08-17 22:58:51,121 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_catboost/v1
+2026-08-17 22:58:51,127 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 22:58:51,296 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 33.27% | Macro F1: 0.28
+2026-08-17 22:58:51,297 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.051 | Brier Score: 0.212
+2026-08-17 22:58:51,297 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.5149156939040207, 'SIDEWAYS': 0.5, 'BULLISH': 0.21935483870967742}
+2026-08-17 22:58:51,297 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.8501070663811563, 'SIDEWAYS': 0.009174311926605505, 'BULLISH': 0.13877551020408163}
+2026-08-17 22:58:51,298 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[397   1  69]
+ [164   2  52]
+ [210   1  34]]
+2026-08-17 22:58:51,298 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 22:58:51,447 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 22:58:51,448 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.8814
+2026-08-17 22:58:51,448 INFO finsight.experts.quant.training.pipeline - Net Return    : -11.86%
+2026-08-17 22:58:51,448 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 22:58:51,449 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -17.26%
+2026-08-17 22:58:51,449 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -1.29
+2026-08-17 22:58:51,449 INFO finsight.experts.quant.training.pipeline - Win Rate      : 33.33%
+2026-08-17 22:58:51,450 INFO finsight.experts.quant.training.pipeline - Total Trades  : 51
+2026-08-17 22:58:51,450 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -0.79%
+2026-08-17 22:58:51,450 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 22:58:51,451 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 22:58:51,453 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 22:58:51,453 INFO finsight.experts.quant.training.shap_explainer - Bỏ qua SHAP Explainer cho CatBoost để tránh lỗi silent crash (segmentation fault) trên thư viện SHAP hiện tại.
+2026-08-17 22:58:51,454 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 22:58:51,457 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 22:58:51,465 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_catboost/v1
+2026-08-17 22:58:51,467 INFO finsight.cli.quant_commands - Starting pipeline for Engine: LOGISTIC_REGRESSION
+2026-08-17 22:58:51,469 INFO finsight.experts.quant.training.pipeline - Đọc dữ liệu từ data\gold\training_samples\crypto_quant_1d_5d.parquet
+2026-08-17 22:58:51,510 INFO finsight.experts.quant.training.pipeline - Tách DEV Holdout: 930 samples.
+2026-08-17 22:58:51,510 INFO finsight.experts.quant.training.pipeline - Tách Calibration: 840 samples.
+2026-08-17 22:58:51,511 INFO finsight.experts.quant.training.pipeline - Train/Optuna: 16350 samples.
+2026-08-17 22:58:51,512 INFO finsight.experts.quant.training.pipeline - Class Distribution trên Train/Optuna: BEARISH: 40.2%, BULLISH: 37.5%, SIDEWAYS: 22.3%
+2026-08-17 22:58:51,512 INFO finsight.experts.quant.training.pipeline - Bắt đầu huấn luyện mô hình (BỎ QUA Optuna)...
+2026-08-17 22:58:51,514 INFO finsight.experts.quant.models.logistic_regression - Training final Logistic Regression model on full training set...
+2026-08-17 22:58:52,508 INFO finsight.experts.quant.training.pipeline - Sinh Calibration probabilities...
+2026-08-17 22:58:52,514 INFO finsight.experts.quant.training.pipeline - Tuning Probability Threshold trên tập Calibration...
+2026-08-17 22:58:52,551 INFO finsight.experts.quant.training.pipeline - Đã Tune Threshold = 0.34 (OOS F1-BULLISH: 0.47) trên 840 mẫu Calibration.
+2026-08-17 22:58:52,552 INFO finsight.experts.quant.training.pipeline - Lưu mô hình tại artifacts/models/crypto/crypto_quant_1d_5d_logistic_regression/v1
+2026-08-17 22:58:52,556 INFO finsight.experts.quant.training.pipeline - Chạy Evaluate Metrics trên Final Holdout (Untouched Data)...
+2026-08-17 22:58:52,732 INFO finsight.experts.quant.training.pipeline - Balanced Acc (Holdout): 32.93% | Macro F1: 0.26
+2026-08-17 22:58:52,732 INFO finsight.experts.quant.training.pipeline - Log Loss: 1.101 | Brier Score: 0.224
+2026-08-17 22:58:52,732 INFO finsight.experts.quant.training.pipeline - Precision: {'BEARISH': 0.4924924924924925, 'SIDEWAYS': 0.0, 'BULLISH': 0.2613065326633166}
+2026-08-17 22:58:52,733 INFO finsight.experts.quant.training.pipeline - Recall: {'BEARISH': 0.3511777301927195, 'SIDEWAYS': 0.0, 'BULLISH': 0.636734693877551}
+2026-08-17 22:58:52,733 INFO finsight.experts.quant.training.pipeline - Confusion Matrix:
+[[164   0 303]
+ [ 80   0 138]
+ [ 89   0 156]]
+2026-08-17 22:58:52,734 INFO finsight.experts.quant.training.pipeline - Chạy Spot-safe Backtest Simulation...
+2026-08-17 22:58:52,970 INFO finsight.experts.quant.training.pipeline - === KẾT QUẢ BACKTEST (MARK-TO-MARKET PORTFOLIO) ===
+2026-08-17 22:58:52,971 INFO finsight.experts.quant.training.pipeline - Final Equity  : 0.6962
+2026-08-17 22:58:52,971 INFO finsight.experts.quant.training.pipeline - Net Return    : -30.38%
+2026-08-17 22:58:52,971 INFO finsight.experts.quant.training.pipeline - B&H Baseline  : -27.73%
+2026-08-17 22:58:52,972 INFO finsight.experts.quant.training.pipeline - Max Drawdown  : -35.07%
+2026-08-17 22:58:52,972 INFO finsight.experts.quant.training.pipeline - Sharpe Ratio  : -3.07
+2026-08-17 22:58:52,972 INFO finsight.experts.quant.training.pipeline - Win Rate      : 32.37%
+2026-08-17 22:58:52,973 INFO finsight.experts.quant.training.pipeline - Total Trades  : 173
+2026-08-17 22:58:52,973 INFO finsight.experts.quant.training.pipeline - Avg Trade Ret : -1.63%
+2026-08-17 22:58:52,973 INFO finsight.experts.quant.training.pipeline - ==================================================
+2026-08-17 22:58:52,973 INFO finsight.experts.quant.training.pipeline - Chạy phân tích SHAP Feature Importance...
+2026-08-17 22:58:52,976 INFO finsight.experts.quant.training.shap_explainer - Tính toán SHAP values trên 930 samples...
+2026-08-17 22:58:52,976 INFO finsight.experts.quant.training.shap_explainer - Bỏ qua SHAP Explainer vì mô hình là dạng Pipeline/Linear (không hỗ trợ TreeExplainer).
+2026-08-17 22:58:52,977 INFO finsight.experts.quant.training.pipeline - Lưu báo cáo tổng hợp (Model Card & JSON)...
+2026-08-17 22:58:52,979 INFO finsight.experts.quant.training.report - Đã tạo model_card.md thành công.
+2026-08-17 22:58:52,981 INFO finsight.cli.quant_commands - [OK] Training success! Saved at: artifacts/models/crypto/crypto_quant_1d_5d_logistic_regression/v1
+2026-08-17 22:58:52,982 INFO finsight.cli.quant_commands - [DONE] All Batch Training completed!

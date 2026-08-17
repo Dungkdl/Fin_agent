@@ -79,5 +79,20 @@ def add_cross_asset_features(df: pd.DataFrame, context_dfs: dict[str, pd.DataFra
             # breadth = tỷ lệ coin có return > 0
             breadth_val = np.nanmean(market_returns_arr > 0, axis=0)
             df["market_return_breadth"] = pd.Series(breadth_val, index=df_sorted.index)
+            
+            # 4. Cross-Sectional Rank:
+            # Xếp hạng phần trăm (Percentile Rank) return_1 của coin hiện tại so với vũ trụ các coin
+            if "return_1" in df_sorted.columns:
+                current_returns = df_sorted["return_1"].values
+                valid_mask = ~np.isnan(market_returns_arr)
+                valid_counts = valid_mask.sum(axis=0)
+                
+                # Tránh chia cho 0 nếu tại thời điểm đó không có coin nào hợp lệ
+                with np.errstate(divide='ignore', invalid='ignore'):
+                    # Đếm số lượng coin có return nhỏ hơn coin hiện tại
+                    less_than_count = np.sum((market_returns_arr < current_returns) & valid_mask, axis=0)
+                    rank_val = np.where(valid_counts > 0, less_than_count / valid_counts, np.nan)
+                    
+                df["cross_sectional_rank_1d"] = pd.Series(rank_val, index=df_sorted.index)
     
     return df
